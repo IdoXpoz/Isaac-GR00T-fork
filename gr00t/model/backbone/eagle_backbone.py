@@ -61,7 +61,9 @@ class EagleBackbone(nn.Module):
 
         # needed since we don't use these layers. Also saves compute
         while len(self.eagle_model.language_model.model.layers) > select_layer:
+            print(f"popping layer {len(self.eagle_model.language_model.model.layers)}")
             self.eagle_model.language_model.model.layers.pop(-1)
+            print(f"new Number of layers: {len(self.eagle_model.language_model.model.layers)}")
 
         self.select_layer = select_layer
         self.set_trainable_parameters(tune_llm, tune_visual)
