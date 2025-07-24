@@ -59,13 +59,25 @@ class EagleBackbone(nn.Module):
 
         print(f"original Number of layers: {len(self.eagle_model.language_model.model.layers)}")
 
-        # needed since we don't use these layers. Also saves compute
-        while len(self.eagle_model.language_model.model.layers) > select_layer:
-            print(f"popping layer {len(self.eagle_model.language_model.model.layers)}")
-            self.eagle_model.language_model.model.layers.pop(-1)
-            print(f"new Number of layers: {len(self.eagle_model.language_model.model.layers)}")
+        # DON'T pop layers - this breaks the model's numerical stability!
+        # The model was trained with the full architecture, removing layers causes NaN
+        # Just use the layer we want from the full model
+        #
+        # # needed since we don't use these layers. Also saves compute
+        # while len(self.eagle_model.language_model.model.layers) > select_layer:
+        #     print(f"popping layer {len(self.eagle_model.language_model.model.layers)}")
+        #     self.eagle_model.language_model.model.layers.pop(-1)
+        #     print(f"new Number of layers: {len(self.eagle_model.language_model.model.layers)}")
+
+        # Ensure select_layer is within bounds for the full model
+        max_layers = len(self.eagle_model.language_model.model.layers)
+        if select_layer >= max_layers:
+            print(f"WARNING: select_layer {select_layer} >= max_layers {max_layers}, using layer {max_layers-1}")
+            select_layer = max_layers - 1
 
         self.select_layer = select_layer
+        print(f"Will use layer {self.select_layer} from full model with {max_layers} layers")
+
         self.set_trainable_parameters(tune_llm, tune_visual)
 
     def set_trainable_parameters(self, tune_llm: bool, tune_visual: bool):
