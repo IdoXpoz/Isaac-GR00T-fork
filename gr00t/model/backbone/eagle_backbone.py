@@ -54,7 +54,7 @@ class EagleBackbone(nn.Module):
             self.eagle_linear = torch.nn.Identity()
 
         # SET SELECT LAYER HERE
-        # select_layer = 27
+        select_layer = 13
         print(f"Selecting layer {select_layer}")
 
         # needed since we don't use these layers. Also saves compute
