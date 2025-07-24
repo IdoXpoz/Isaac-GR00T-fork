@@ -115,7 +115,9 @@ class EagleBackbone(nn.Module):
 
         eagle_features = self.eagle_linear(eagle_features)
         print(f"eagle_features shape after linear: {eagle_features.shape}")
+        print(f"eagle_features: {eagle_features}")
 
+        print(f"exiting forward_eagle")
         return eagle_features, eagle_input["attention_mask"]
 
     def forward(self, vl_input: BatchFeature) -> BatchFeature:
