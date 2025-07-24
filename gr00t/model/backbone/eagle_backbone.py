@@ -54,7 +54,7 @@ class EagleBackbone(nn.Module):
             self.eagle_linear = torch.nn.Identity()
 
         # SET SELECT LAYER HERE
-        select_layer = 11
+        select_layer = 13
         print(f"Selecting layer {select_layer}")
 
         print(f"original Number of layers: {len(self.eagle_model.language_model.model.layers)}")
@@ -104,14 +104,18 @@ class EagleBackbone(nn.Module):
         return BatchFeature(data=batch)
 
     def forward_eagle(self, vl_input: BatchFeature) -> BatchFeature:
+        print("entered forward_eagle")
         eagle_prefix = "eagle_"
         eagle_input = {k.removeprefix(eagle_prefix): v for k, v in vl_input.items() if k.startswith(eagle_prefix)}
         del eagle_input["image_sizes"]
 
         eagle_output = self.eagle_model(**eagle_input, output_hidden_states=True, return_dict=True)
         eagle_features = eagle_output.hidden_states[self.select_layer]
+        print(f"getting eagle features from layer {self.select_layer}")
 
         eagle_features = self.eagle_linear(eagle_features)
+        print(f"eagle_features shape after linear: {eagle_features.shape}")
+
         return eagle_features, eagle_input["attention_mask"]
 
     def forward(self, vl_input: BatchFeature) -> BatchFeature:
