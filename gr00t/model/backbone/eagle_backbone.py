@@ -112,10 +112,17 @@ class EagleBackbone(nn.Module):
         eagle_output = self.eagle_model(**eagle_input, output_hidden_states=True, return_dict=True)
         eagle_features = eagle_output.hidden_states[self.select_layer]
         print(f"getting eagle features from layer {self.select_layer}")
+        print(f"eagle_features before linear: {eagle_features}")
+
+        layer_11_features = eagle_output.hidden_states[11]
+        print(f"layer_11_features before linear: {layer_11_features}")
 
         eagle_features = self.eagle_linear(eagle_features)
         print(f"eagle_features shape after linear: {eagle_features.shape}")
         print(f"eagle_features: {eagle_features}")
+
+        layer_11_features = self.eagle_linear(layer_11_features)
+        print(f"layer_11_features after linear: {layer_11_features}")
 
         print(f"exiting forward_eagle")
         return eagle_features, eagle_input["attention_mask"]
