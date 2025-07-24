@@ -109,26 +109,79 @@ class EagleBackbone(nn.Module):
         eagle_input = {k.removeprefix(eagle_prefix): v for k, v in vl_input.items() if k.startswith(eagle_prefix)}
         del eagle_input["image_sizes"]
 
-        eagle_output = self.eagle_model(**eagle_input, output_hidden_states=True, return_dict=True)
-        eagle_features = eagle_output.hidden_states[self.select_layer]
-        print(f"getting eagle features from layer {self.select_layer}")
-        print(f"eagle_features before linear: {eagle_features}")
+        # Debug: Check input validity
+        for key, value in eagle_input.items():
+            if isinstance(value, torch.Tensor):
+                has_nan = torch.isnan(value).any()
+                has_inf = torch.isinf(value).any()
+                print(f"Input {key}: shape={value.shape}, has_nan={has_nan}, has_inf={has_inf}, dtype={value.dtype}")
+                if has_nan or has_inf:
+                    print(f"WARNING: Input {key} contains NaN or Inf values!")
 
-        layer_11_features = eagle_output.hidden_states[11]
-        print(f"layer_11_features before linear: {layer_11_features}")
+        # Debug: Check model state
+        print(f"Eagle model training mode: {self.eagle_model.training}")
+        print(f"Eagle language model training mode: {self.eagle_model.language_model.training}")
+        print(f"Number of layers: {len(self.eagle_model.language_model.model.layers)}")
 
-        layer_13_features = eagle_output.hidden_states[13]
-        print(f"layer_13_features before linear: {layer_13_features}")
+        # Ensure model is in eval mode
+        self.eagle_model.eval()
 
-        eagle_features = self.eagle_linear(eagle_features)
-        print(f"eagle_features shape after linear: {eagle_features.shape}")
-        print(f"eagle_features: {eagle_features}")
+        # Run the model with autocast disabled first to check for issues
+        with torch.no_grad():
+            print("Running eagle model forward pass...")
+            eagle_output = self.eagle_model(**eagle_input, output_hidden_states=True, return_dict=True)
 
-        layer_11_features = self.eagle_linear(layer_11_features)
-        print(f"layer_11_features after linear: {layer_11_features}")
+        # Debug: Check each hidden state for NaN/Inf
+        print(f"Number of hidden states: {len(eagle_output.hidden_states)}")
+        for i, hidden_state in enumerate(eagle_output.hidden_states):
+            has_nan = torch.isnan(hidden_state).any()
+            has_inf = torch.isinf(hidden_state).any()
+            print(f"Layer {i}: shape={hidden_state.shape}, has_nan={has_nan}, has_inf={has_inf}")
+            if has_nan or has_inf:
+                print(f"ERROR: Layer {i} contains NaN or Inf values!")
+                print(
+                    f"Layer {i} stats: min={hidden_state.min()}, max={hidden_state.max()}, mean={hidden_state.mean()}"
+                )
 
-        layer_13_features = self.eagle_linear(layer_13_features)
-        print(f"layer_13_features after linear: {layer_13_features}")
+        # Safe access to layers
+        def safe_get_layer(layer_idx, name):
+            if layer_idx < len(eagle_output.hidden_states):
+                features = eagle_output.hidden_states[layer_idx]
+                has_nan = torch.isnan(features).any()
+                print(f"{name} (layer {layer_idx}): has_nan={has_nan}")
+                if has_nan:
+                    print(f"WARNING: {name} contains NaN values!")
+                    # Try to find where NaN starts
+                    nan_mask = torch.isnan(features)
+                    print(f"NaN positions: {nan_mask.sum()} out of {nan_mask.numel()} elements")
+                return features
+            else:
+                print(f"WARNING: Layer {layer_idx} not available (only {len(eagle_output.hidden_states)} layers)")
+                return None
+
+        # Get features safely
+        eagle_features = safe_get_layer(self.select_layer, "eagle_features")
+        layer_11_features = safe_get_layer(11, "layer_11_features")
+        layer_13_features = safe_get_layer(13, "layer_13_features")
+
+        # Apply linear transformation and check for NaN propagation
+        if eagle_features is not None:
+            print(f"Applying linear transformation to eagle_features...")
+            eagle_features = self.eagle_linear(eagle_features)
+            has_nan_after = torch.isnan(eagle_features).any()
+            print(f"eagle_features after linear: has_nan={has_nan_after}, shape={eagle_features.shape}")
+
+        if layer_11_features is not None:
+            print(f"Applying linear transformation to layer_11_features...")
+            layer_11_features = self.eagle_linear(layer_11_features)
+            has_nan_after = torch.isnan(layer_11_features).any()
+            print(f"layer_11_features after linear: has_nan={has_nan_after}")
+
+        if layer_13_features is not None:
+            print(f"Applying linear transformation to layer_13_features...")
+            layer_13_features = self.eagle_linear(layer_13_features)
+            has_nan_after = torch.isnan(layer_13_features).any()
+            print(f"layer_13_features after linear: has_nan={has_nan_after}")
 
         print(f"exiting forward_eagle")
         return eagle_features, eagle_input["attention_mask"]
