@@ -54,7 +54,7 @@ class EagleBackbone(nn.Module):
             self.eagle_linear = torch.nn.Identity()
 
         # SET SELECT LAYER HERE
-        select_layer = 20
+        select_layer = 12
         print(f"Selecting layer {select_layer}")
 
         print(f"original Number of layers: {len(self.eagle_model.language_model.model.layers)}")
@@ -117,8 +117,8 @@ class EagleBackbone(nn.Module):
         layer_11_features = eagle_output.hidden_states[11]
         print(f"layer_11_features before linear: {layer_11_features}")
 
-        layer_13_features = eagle_output.hidden_states[13]
-        print(f"layer_13_features before linear: {layer_13_features}")
+        # layer_13_features = eagle_output.hidden_states[13]
+        # print(f"layer_13_features before linear: {layer_13_features}")
 
         eagle_features = self.eagle_linear(eagle_features)
         print(f"eagle_features shape after linear: {eagle_features.shape}")
@@ -127,8 +127,8 @@ class EagleBackbone(nn.Module):
         layer_11_features = self.eagle_linear(layer_11_features)
         print(f"layer_11_features after linear: {layer_11_features}")
 
-        layer_13_features = self.eagle_linear(layer_13_features)
-        print(f"layer_13_features after linear: {layer_13_features}")
+        # layer_13_features = self.eagle_linear(layer_13_features)
+        # print(f"layer_13_features after linear: {layer_13_features}")
 
         print(f"exiting forward_eagle")
         return eagle_features, eagle_input["attention_mask"]
