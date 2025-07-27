@@ -169,8 +169,8 @@ class GR00T_N1_5(PreTrainedModel):
         backbone_inputs, action_inputs = self.prepare_input(inputs)
         # Because the behavior of backbones remains the same for training and inference, we can use `forward` for backbones.
         backbone_outputs = self.backbone(backbone_inputs)
-        print(f"backbone_outputs shape: {backbone_outputs.shape}")
-        print(f"backbone_outputs: {backbone_outputs}")
+        # print(f"backbone_outputs shape: {backbone_outputs.shape}")
+        # print(f"backbone_outputs: {backbone_outputs}")
 
         action_head_outputs = self.action_head.get_action(backbone_outputs, action_inputs)
         self.validate_data(action_head_outputs, backbone_outputs, is_training=False)
