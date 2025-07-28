@@ -40,7 +40,7 @@ class Eagle2_5_VLConfig(PretrainedConfig):
         use_backbone_lora=0,
         use_llm_lora=0,
         pad2square=False,
-        select_layer=-4,
+        select_layer=27,
         force_image_size=None,
         downsample_ratio=0.5,
         template=None,
@@ -61,17 +61,15 @@ class Eagle2_5_VLConfig(PretrainedConfig):
     ):
         super().__init__(**kwargs)
 
+        print("text config: ", text_config)
+
         if vision_config is None:
             vision_config = {"model_type": "siglip_vision_model"}
-            logger.info(
-                "vision_config is None. Initializing the InternVisionConfig with default values."
-            )
+            logger.info("vision_config is None. Initializing the InternVisionConfig with default values.")
 
         if text_config is None:
             text_config = {"architectures": ["Qwen2ForCausalLM"]}
-            logger.info(
-                "text_config is None. Initializing the LlamaConfig config with default values (`LlamaConfig`)."
-            )
+            logger.info("text_config is None. Initializing the LlamaConfig config with default values (`LlamaConfig`).")
 
         if vision_config["model_type"] == "siglip_vision_model":
             self.vision_config = SiglipVisionConfig(**vision_config)
