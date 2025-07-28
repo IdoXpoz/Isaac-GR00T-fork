@@ -73,6 +73,8 @@ class GR00T_N1_5(PreTrainedModel):
         local_model_path: str,
     ):
         assert isinstance(config.backbone_cfg, dict)
+        # SET SELECT LAYER HERE 2
+        config.backbone_cfg["select_layer"] = 27
         print("111111111111111111111111111111111111111111111")
         print("backbone config: ", config.backbone_cfg)
         assert isinstance(config.action_head_cfg, dict)
