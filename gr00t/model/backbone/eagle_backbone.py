@@ -53,8 +53,6 @@ class EagleBackbone(nn.Module):
         else:
             self.eagle_linear = torch.nn.Identity()
 
-        # SET SELECT LAYER HERE
-        select_layer = 27
         print(f"Selecting layer {select_layer}")
 
         print(f"original Number of layers: {len(self.eagle_model.language_model.model.layers)}")

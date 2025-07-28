@@ -19,7 +19,7 @@
     "mlp_connector_layers": 1,
     "model_type": "eagle_2_5_vl",
     "pad2square": false,
-    "select_layer": -1,
+    "select_layer": 27,
     "template": "qwen3-chat",
     "text_config": {
         "_attn_implementation_autoset": true,
