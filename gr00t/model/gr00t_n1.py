@@ -51,6 +51,7 @@ class GR00T_N1_5_Config(PretrainedConfig):
     compute_dtype: str = field(default="float32", metadata={"help": "Compute dtype."})
 
     def __init__(self, **kwargs):
+        print("gr00t_n1_5 config init kwargs: ", kwargs)
         super().__init__(**kwargs)
         for key, value in kwargs.items():
             setattr(self, key, value)

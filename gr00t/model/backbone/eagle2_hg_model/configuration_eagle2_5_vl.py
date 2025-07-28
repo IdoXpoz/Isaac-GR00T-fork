@@ -61,7 +61,7 @@ class Eagle2_5_VLConfig(PretrainedConfig):
     ):
         super().__init__(**kwargs)
 
-        print("text config: ", text_config)
+        print("configuration_eagle2_5_vl text config: ", text_config)
 
         if vision_config is None:
             vision_config = {"model_type": "siglip_vision_model"}

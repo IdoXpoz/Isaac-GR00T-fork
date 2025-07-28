@@ -59,9 +59,7 @@ def export_eagle2_vit(vision_model, output_dir):
         ) -> torch.Tensor:
             _, _, height, width = pixel_values.shape
             target_dtype = self.patch_embedding.weight.dtype
-            patch_embeds = self.patch_embedding(
-                pixel_values.to(dtype=target_dtype)
-            )  # shape = [*, width, grid, grid]
+            patch_embeds = self.patch_embedding(pixel_values.to(dtype=target_dtype))  # shape = [*, width, grid, grid]
             embeddings = patch_embeds.flatten(2).transpose(1, 2)
 
             if interpolate_pos_encoding:
@@ -84,15 +82,9 @@ def export_eagle2_vit(vision_model, output_dir):
             output_hidden_states: Optional[bool] = None,
             interpolate_pos_encoding: Optional[bool] = False,
         ):
-            output_attentions = (
-                output_attentions
-                if output_attentions is not None
-                else self.config.output_attentions
-            )
+            output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
             output_hidden_states = (
-                output_hidden_states
-                if output_hidden_states is not None
-                else self.config.output_hidden_states
+                output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
             )
 
             hidden_states = self.embeddings(
@@ -154,8 +146,12 @@ def export_eagle2_llm(backbone_model, backbone_config, output_dir, attention_mas
             self.eagle_model.language_model = Qwen3ForCausalLM(config.text_config)
 
             # # remove parts of the LLM
+            print("222222222222222222222222222222222222222222222")
+            print("select_layer in export_onnx init: ", kwargs["select_layer"])
             while len(self.eagle_model.language_model.model.layers) > kwargs["select_layer"]:
+                print(f"popping layer {len(self.eagle_model.language_model.model.layers)}")
                 self.eagle_model.language_model.model.layers.pop(-1)
+                print(f"new Number of layers: {len(self.eagle_model.language_model.model.layers)}")
 
         def forward(self, input_ids, vit_embeds, attention_mask):
             if self.eagle_model.use_pixel_shuffle:
@@ -199,6 +195,7 @@ def export_eagle2_llm(backbone_model, backbone_config, output_dir, attention_mas
                 attention_mask=attention_mask,
                 output_hidden_states=True,
             )
+            print("select_layer in export_onnx forward: ", self.select_layer)
             eagle_features = outputs.hidden_states[self.select_layer]
             eagle_features = self.eagle_linear(eagle_features)
             return eagle_features
@@ -252,9 +249,7 @@ class VLLN_VLSelfAttention(torch.nn.Module):
 
 def export_action_head(policy, ONNX_export_path, input_state, attention_mask):
     process_backbone_model = (
-        VLLN_VLSelfAttention(
-            policy.model.action_head.vlln, policy.model.action_head.vl_self_attention
-        )
+        VLLN_VLSelfAttention(policy.model.action_head.vlln, policy.model.action_head.vl_self_attention)
         .to(torch.float16)
         .cuda()
     )
@@ -279,9 +274,7 @@ def export_action_head(policy, ONNX_export_path, input_state, attention_mask):
 
     state_encoder = policy.model.action_head.state_encoder.to(torch.float16)
 
-    state_tensor = torch.randn(
-        (1, input_state.shape[1], input_state.shape[2]), dtype=torch.float16
-    ).cuda()
+    state_tensor = torch.randn((1, input_state.shape[1], input_state.shape[2]), dtype=torch.float16).cuda()
     embodiment_id_tensor = torch.ones((1), dtype=torch.int64).cuda()
 
     torch.onnx.export(
@@ -426,9 +419,7 @@ def run_groot_inference(
     os.makedirs(os.path.join(onnx_model_path, "action_head"), exist_ok=True)
 
     export_eagle2_vit(policy.model.backbone.eagle_model.vision_model.vision_model, onnx_model_path)
-    export_eagle2_llm(
-        policy.model.backbone, policy.model.config.backbone_cfg, onnx_model_path, attention_mask
-    )
+    export_eagle2_llm(policy.model.backbone, policy.model.config.backbone_cfg, onnx_model_path, attention_mask)
     export_action_head(policy, onnx_model_path, state, attention_mask)
 
     return predicted_action

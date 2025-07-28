@@ -46,6 +46,7 @@ class EagleBackbone(nn.Module):
         assert not reproject_vision, "Reproject vision is not implemented here, set to False"
 
         config = AutoConfig.from_pretrained(DEFAULT_EAGLE_PATH, trust_remote_code=True)
+        print("eagle_backbone init config: ", config)
         self.eagle_model = AutoModel.from_config(config, trust_remote_code=True)
 
         if project_to_dim is not None:
@@ -108,6 +109,8 @@ class EagleBackbone(nn.Module):
         eagle_prefix = "eagle_"
         eagle_input = {k.removeprefix(eagle_prefix): v for k, v in vl_input.items() if k.startswith(eagle_prefix)}
         del eagle_input["image_sizes"]
+
+        print(" eagle_backbone forward_eagle eagle_input: ", eagle_input)
 
         eagle_output = self.eagle_model(**eagle_input, output_hidden_states=True, return_dict=True)
         eagle_features = eagle_output.hidden_states[self.select_layer]
