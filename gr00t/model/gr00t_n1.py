@@ -73,6 +73,8 @@ class GR00T_N1_5(PreTrainedModel):
         local_model_path: str,
     ):
         assert isinstance(config.backbone_cfg, dict)
+        print("111111111111111111111111111111111111111111111")
+        print("backbone config: ", config.backbone_cfg)
         assert isinstance(config.action_head_cfg, dict)
 
         super().__init__(config)
