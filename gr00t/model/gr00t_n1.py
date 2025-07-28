@@ -172,7 +172,7 @@ class GR00T_N1_5(PreTrainedModel):
         self.validate_data(action_head_outputs, backbone_outputs, is_training=False)
         return action_head_outputs
 
-    def get_backbone_features(
+    def get_VLM_selected_layer_output(
         self,
         inputs: dict,
     ) -> BatchFeature:

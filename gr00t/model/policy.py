@@ -181,7 +181,7 @@ class Gr00tPolicy(BasePolicy):
             unnormalized_action = squeeze_dict_values(unnormalized_action)
         return unnormalized_action
 
-    def get_backbone_features(self, observations: Dict[str, Any]) -> Dict[str, Any]:
+    def get_VLM_selected_layer_output(self, observations: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract backbone features from observations without running through the action head.
         This applies the same preprocessing as get_action but returns VLM backbone features
@@ -210,7 +210,7 @@ class Gr00tPolicy(BasePolicy):
         normalized_input = self.apply_transforms(observations)
 
         # Extract backbone features using the model's new method
-        backbone_features = self._get_backbone_features_from_normalized_input(normalized_input)
+        backbone_features = self._get_VLM_selected_layer_output_from_normalized_input(normalized_input)
 
         # Remove batch dimension if input wasn't batched
         if not is_batch:
@@ -229,11 +229,11 @@ class Gr00tPolicy(BasePolicy):
     def _get_unnormalized_action(self, normalized_action: torch.Tensor) -> Dict[str, Any]:
         return self.unapply_transforms({"action": normalized_action.cpu()})
 
-    def _get_backbone_features_from_normalized_input(self, normalized_input: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_VLM_selected_layer_output_from_normalized_input(self, normalized_input: Dict[str, Any]) -> Dict[str, Any]:
         """Extract backbone features from normalized input."""
         # Set up autocast context (same as _get_action_from_normalized_input)
         with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=COMPUTE_DTYPE):
-            backbone_outputs = self.model.get_backbone_features(normalized_input)
+            backbone_outputs = self.model.get_VLM_selected_layer_output(normalized_input)
 
         # Convert BatchFeature to regular dict and move to CPU
         backbone_features = {}
