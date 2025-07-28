@@ -52,6 +52,8 @@ class GR00T_N1_5_Config(PretrainedConfig):
 
     def __init__(self, **kwargs):
         print("gr00t_n1_5 config init kwargs: ", kwargs)
+        kwargs["backbone_cfg"]["select_layer"] = 27
+        print("gr00t_n1_5 config init kwargs after select_layer: ", kwargs)
         super().__init__(**kwargs)
         for key, value in kwargs.items():
             setattr(self, key, value)
