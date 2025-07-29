@@ -21,9 +21,7 @@ from transformers.feature_extraction_utils import BatchFeature
 
 import gr00t
 
-DEFAULT_EAGLE_PATH = os.path.join(
-    os.path.dirname(gr00t.__file__), "model", "backbone", "eagle2_hg_model"
-)
+DEFAULT_EAGLE_PATH = os.path.join(os.path.dirname(gr00t.__file__), "model", "backbone", "eagle2_hg_model")
 
 
 class EagleBackbone(nn.Module):
@@ -54,6 +52,9 @@ class EagleBackbone(nn.Module):
             self.eagle_linear = torch.nn.Linear(2048, project_to_dim)
         else:
             self.eagle_linear = torch.nn.Identity()
+
+        # SET SELECT LAYER HERE
+        select_layer = 11
 
         # needed since we don't use these layers. Also saves compute
         while len(self.eagle_model.language_model.model.layers) > select_layer:
@@ -99,14 +100,11 @@ class EagleBackbone(nn.Module):
 
     def forward_eagle(self, vl_input: BatchFeature) -> BatchFeature:
         eagle_prefix = "eagle_"
-        eagle_input = {
-            k.removeprefix(eagle_prefix): v
-            for k, v in vl_input.items()
-            if k.startswith(eagle_prefix)
-        }
+        eagle_input = {k.removeprefix(eagle_prefix): v for k, v in vl_input.items() if k.startswith(eagle_prefix)}
         del eagle_input["image_sizes"]
 
         eagle_output = self.eagle_model(**eagle_input, output_hidden_states=True, return_dict=True)
+        print("taking eagle output from layer", self.select_layer)
         eagle_features = eagle_output.hidden_states[self.select_layer]
 
         eagle_features = self.eagle_linear(eagle_features)
@@ -120,9 +118,7 @@ class EagleBackbone(nn.Module):
         # YL (TODO HACK): to resolve DDP issue when tune_visual=True
         # Ensure all trainable parameters in vision_model are used in the forward pass for DDP compatibility
         if self.training and self.tune_visual:
-            dummy_term = torch.tensor(
-                0.0, device=eagle_embeds.device, dtype=eagle_embeds.dtype, requires_grad=True
-            )
+            dummy_term = torch.tensor(0.0, device=eagle_embeds.device, dtype=eagle_embeds.dtype, requires_grad=True)
             for param in self.eagle_model.vision_model.parameters():
                 if param.requires_grad:
                     dummy_term = dummy_term + 0.0 * param.sum()
