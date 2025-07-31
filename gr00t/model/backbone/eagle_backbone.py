@@ -103,11 +103,26 @@ class EagleBackbone(nn.Module):
         eagle_input = {k.removeprefix(eagle_prefix): v for k, v in vl_input.items() if k.startswith(eagle_prefix)}
         del eagle_input["image_sizes"]
 
+        # Log input shapes
+        print("🔍 VLM Input shapes:")
+        for key, value in eagle_input.items():
+            if hasattr(value, "shape"):
+                print(f"  {key}: {value.shape}")
+            else:
+                print(f"  {key}: {type(value)} (no shape)")
+
         eagle_output = self.eagle_model(**eagle_input, output_hidden_states=True, return_dict=True)
         print("taking eagle output from layer", self.select_layer)
         eagle_features = eagle_output.hidden_states[self.select_layer]
 
+        # Log VLM output shape before linear projection
+        print(f"🔍 VLM Raw Output shape (layer {self.select_layer}): {eagle_features.shape}")
+
         eagle_features = self.eagle_linear(eagle_features)
+
+        # Log final output shape after linear projection
+        print(f"🔍 VLM Final Output shape (after linear): {eagle_features.shape}")
+
         return eagle_features, eagle_input["attention_mask"]
 
     def forward(self, vl_input: BatchFeature) -> BatchFeature:
