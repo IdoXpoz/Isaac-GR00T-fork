@@ -21,7 +21,7 @@ from train_probe import ActionProbe, ProbeDataset, load_probe_data, split_data
 
 def load_trained_model(model_path: str, input_dim: int, output_dim: int) -> ActionProbe:
     """Load a trained probe model."""
-    model = ActionProbe(input_dim=input_dim, hidden_dims=[512], output_dim=output_dim, dropout_rate=0.1)
+    model = ActionProbe(input_dim=input_dim, output_dim=output_dim)
 
     model.load_state_dict(torch.load(model_path, map_location="cpu"))
     model.eval()
@@ -210,15 +210,23 @@ def print_evaluation_summary(metrics: Dict[str, float]):
     print("\n" + "=" * 60)
 
 
-def main():
-    """Main evaluation function."""
+def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: str = None):
+    """Main evaluation function.
+    
+    Args:
+        feature_type: Type of features to use - should match training configuration
+        data_path: Path to the processed data file (optional)
+        model_path: Path to the trained model file (optional)
+    """
     # Configuration
-    MODEL_PATH = "probe/best_probe_model.pth"
-    DATA_PATH = "probe_training_data_150k.parquet"
+    MODEL_PATH = model_path or "probe/best_probe_model.pth"
+    DATA_PATH = data_path or "probe_training_data_150k_processed.parquet"  # Use processed data
+    FEATURE_TYPE = feature_type
     HISTORY_PATH = "probe/training_history.pkl"
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     print(f"Using device: {DEVICE}")
+    print(f"Feature type: {FEATURE_TYPE}")
 
     # Check if files exist
     if not os.path.exists(MODEL_PATH):
@@ -228,10 +236,11 @@ def main():
 
     if not os.path.exists(DATA_PATH):
         print(f"❌ Data file not found: {DATA_PATH}")
+        print("Please make sure you've run the data extraction and processing notebook first.")
         return
 
-    # Load data
-    backbone_features, action_targets = load_probe_data(DATA_PATH)
+    # Load data with specified feature type
+    backbone_features, action_targets = load_probe_data(DATA_PATH, feature_type=FEATURE_TYPE)
 
     # Split data (same split as training)
     _, _, test_features, test_targets = split_data(backbone_features, action_targets, train_ratio=0.99)
@@ -242,16 +251,16 @@ def main():
 
     # Get dimensions
     sample_features, sample_target = test_dataset[0]
-    input_dim = sample_features.shape[-1]
+    input_dim = sample_features.shape[-1]  # Should be 2048
     output_dim = sample_target.shape[-1] if len(sample_target.shape) > 0 else 1
 
     print(f"Input dimension: {input_dim}")
     print(f"Output dimension: {output_dim}")
     print(f"Test samples: {len(test_dataset)}")
 
-    # Load trained model
+    # Load trained model (linear regression)
     model = load_trained_model(MODEL_PATH, input_dim, output_dim)
-    print(f"✅ Loaded trained model from {MODEL_PATH}")
+    print(f"✅ Loaded trained linear regression model from {MODEL_PATH}")
 
     # Evaluate model
     print("\n🔍 Evaluating model...")
@@ -275,6 +284,7 @@ def main():
         pickle.dump(metrics_to_save, f)
 
     print(f"\n💾 Evaluation metrics saved to: probe/evaluation_metrics.pkl")
+    print(f"Feature type used: {FEATURE_TYPE}")
     print("🎉 Evaluation completed!")
 
 

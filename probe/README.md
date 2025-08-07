@@ -23,7 +23,7 @@ First, run the data extraction notebook to create the probe training data:
 
 ```bash
 # Run the notebook: getting_started/extract_probe_training_data.ipynb
-# This will create: probe_training_data_150k.parquet
+# This will create processed data: probe_training_data_150k_processed.parquet
 ```
 
 ### 2. Train the Probe
@@ -34,10 +34,10 @@ python train_probe.py
 ```
 
 This will:
-- Load the extracted data from `probe_training_data_150k.parquet`
-- Apply mean pooling to features: [300/301, 2048] → [2048]
+- Load the processed data from `probe_training_data_150k_processed.parquet`
+- Use pre-computed mean-pooled or last vector features [2048]
 - Split data into 99% train, 1% test
-- Train a single-layer neural network probe (512 hidden units)
+- Train a linear regression probe (no hidden layers)
 - Save the best model to `best_probe_model.pth`
 - Save training history to `training_history.pkl`
 
@@ -55,25 +55,28 @@ This will:
 
 ## Model Architecture
 
-The probe uses a simple neural network architecture:
+The probe uses a simple linear regression architecture:
 
 ```
-Input: VLM Backbone Features [300/301, 2048] 
+Input: Pre-processed VLM Backbone Features [2048] 
+       (mean pooled or last vector)
    ↓
-Aggregation: Mean pooling across sequence dimension → [2048]
-   ↓
-MLP: [2048] → [512] → [action_dim]
+Linear Regression: [2048] → [action_dim]
    ↓
 Output: Action Predictions [action_dim]
 ```
 
+**Feature Types Available:**
+- `mean_pooled`: Mean pooling across sequence dimension
+- `last_vector`: Last token from sequence
+
 ## Data Format
 
-The probe expects data in parquet format with the following columns:
+The probe expects processed data in parquet format with the following columns:
 
 ```
-- backbone_features_shape: JSON string with original tensor shape [1, 300/301, 2048]
-- backbone_features: Flattened feature array (reconstructed and mean-pooled to [2048])
+- backbone_features_mean_pooled: Pre-computed mean-pooled features [2048]
+- backbone_features_last_vector: Pre-computed last vector features [2048]
 - action_right_arm_first: Action target values
 - Additional metadata columns (sample_id, task_name, etc.)
 ```
@@ -87,11 +90,14 @@ BATCH_SIZE = 32
 NUM_EPOCHS = 100
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 1e-4
-HIDDEN_DIMS = [1024]  # Single hidden layer
-DROPOUT_RATE = 0.1
+FEATURE_TYPE = "mean_pooled"  # Options: "mean_pooled" or "last_vector"
 TRAIN_RATIO = 0.99  # 99% train, 1% test
-DATA_PATH = "probe_training_data_150k.parquet"  # Parquet format
+DATA_PATH = "probe_training_data_150k_processed.parquet"  # Processed parquet format
 ```
+
+**To switch between feature types**, simply change `FEATURE_TYPE` to:
+- `"mean_pooled"`: Use mean pooling across sequence dimension
+- `"last_vector"`: Use the last vector from sequence
 
 ## Output Files
 
@@ -135,8 +141,8 @@ probe/
    Solution: Reduce `BATCH_SIZE` in the training script
 
 3. **Poor Performance**:
-   - Try different aggregation methods (`mean`, `max`, `last`)
-   - Adjust network architecture (hidden dimensions)
+   - Try different feature types (`mean_pooled` vs `last_vector`)
+   - Since it's linear regression, consider adding regularization
    - Experiment with different learning rates
 
 ### Memory Requirements:
@@ -147,10 +153,10 @@ probe/
 
 ### Custom Probe Architectures:
 Modify the `ActionProbe` class in `train_probe.py` to experiment with:
-- Different aggregation strategies
-- Attention mechanisms
-- Recurrent networks (LSTM/GRU)
-- Transformer-based probes
+- Add regularization techniques (L1/L2, dropout)
+- Multi-task prediction (predict multiple action types)
+- Non-linear transformations before linear layer
+- Ensemble methods with different feature types
 
 ### Multiple Target Analysis:
 Currently predicts only `action_right_arm_first`. You can extend to:

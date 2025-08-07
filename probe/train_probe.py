@@ -78,44 +78,30 @@ class ProbeDataset(Dataset):
 
 class ActionProbe(nn.Module):
     """
-    Neural network probe to predict action tokens from VLM backbone features.
+    Linear regression probe to predict action tokens from VLM backbone features.
 
     Architecture:
-    - Input: Pre-pooled VLM backbone features [hidden_size] (e.g., 2048)
-    - MLP: Multi-layer perceptron for prediction
+    - Input: VLM backbone features [2048] (mean pooled or last vector)
+    - Linear: Direct linear mapping for regression
     - Output: Action predictions [action_dim]
     """
 
     def __init__(
         self,
         input_dim: int,
-        hidden_dims: List[int],
         output_dim: int,
-        dropout_rate: float = 0.1,
     ):
         """
         Initialize the probe.
 
         Args:
             input_dim: Input feature dimension (e.g., 2048 for backbone features)
-            hidden_dims: List of hidden layer dimensions
             output_dim: Output action dimension
-            dropout_rate: Dropout rate for regularization
         """
         super().__init__()
 
-        # Build MLP layers
-        layers = []
-        prev_dim = input_dim
-
-        for hidden_dim in hidden_dims:
-            layers.extend([nn.Linear(prev_dim, hidden_dim), nn.ReLU(), nn.Dropout(dropout_rate)])
-            prev_dim = hidden_dim
-
-        # Output layer
-        layers.append(nn.Linear(prev_dim, output_dim))
-
-        self.mlp = nn.Sequential(*layers)
+        # Simple linear regression layer
+        self.linear = nn.Linear(input_dim, output_dim)
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
         """
@@ -127,8 +113,7 @@ class ActionProbe(nn.Module):
         Returns:
             Action predictions [batch_size, action_dim] or [action_dim]
         """
-        # Features are already pooled to [hidden_size], just pass through MLP
-        return self.mlp(features)
+        return self.linear(features)
 
 
 class ProbeTrainer:
@@ -256,46 +241,52 @@ class ProbeTrainer:
         return history
 
 
-def load_probe_data(data_path: str) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
+def load_probe_data(data_path: str, feature_type: str = "mean_pooled") -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
     """
-    Load probe training data from parquet file.
+    Load probe training data from processed parquet file.
 
     Args:
-        data_path: Path to the parquet file containing probe data
+        data_path: Path to the parquet file containing processed probe data
+        feature_type: Type of features to use - "mean_pooled" or "last_vector"
 
     Returns:
         Tuple of (backbone_features, action_targets)
     """
     print(f"Loading data from {data_path}...")
+    print(f"Using feature type: {feature_type}")
 
     # Load parquet file
     df = pd.read_parquet(data_path)
     print(f"Loaded DataFrame with {len(df)} rows and columns: {list(df.columns)}")
 
+    # Determine which column to use for features
+    if feature_type == "mean_pooled":
+        feature_column = "backbone_features_mean_pooled"
+    elif feature_type == "last_vector":
+        feature_column = "backbone_features_last_vector"
+    else:
+        raise ValueError(f"Invalid feature_type: {feature_type}. Must be 'mean_pooled' or 'last_vector'")
+
+    if feature_column not in df.columns:
+        raise ValueError(f"Column '{feature_column}' not found in data. Available columns: {list(df.columns)}")
+
     backbone_features = []
     action_targets = []
 
-    print("Processing backbone features and action targets...")
+    print(f"Processing {feature_column} and action targets...")
     for idx, row in tqdm(df.iterrows(), total=len(df), desc="Loading data"):
         # Process backbone features
-        if row["backbone_features"] is not None and row["backbone_features_shape"] is not None:
-            # Reconstruct tensor from flattened data and original shape
-            flat_features = np.array(row["backbone_features"])
-            original_shape = json.loads(row["backbone_features_shape"])
-
-            # Reshape back to original dimensions
-            backbone_tensor = torch.tensor(flat_features.reshape(original_shape), dtype=torch.float32)
-
-            # Handle the shape: expected [300,2048] or [301,2048] -> apply mean pooling to get [2048]
-            if len(backbone_tensor.shape) == 3 and backbone_tensor.shape[0] == 1:
-                # Remove batch dimension: [1, seq_len, hidden_size] -> [seq_len, hidden_size]
-                backbone_tensor = backbone_tensor.squeeze(0)
-
-            # Apply mean pooling across sequence dimension: [seq_len, 2048] -> [2048]
-            if len(backbone_tensor.shape) == 2:
-                backbone_tensor = backbone_tensor.mean(dim=0)  # [2048]
-
-            backbone_features.append(backbone_tensor)
+        if row[feature_column] is not None:
+            # Features are already processed as [2048] vectors
+            feature_array = np.array(row[feature_column])
+            backbone_tensor = torch.tensor(feature_array, dtype=torch.float32)
+            
+            # Ensure shape is [2048]
+            if backbone_tensor.shape != torch.Size([2048]):
+                print(f"⚠️  Unexpected feature shape: {backbone_tensor.shape}, expected [2048]")
+                backbone_features.append(None)
+            else:
+                backbone_features.append(backbone_tensor)
         else:
             backbone_features.append(None)
 
@@ -314,7 +305,7 @@ def load_probe_data(data_path: str) -> Tuple[List[torch.Tensor], List[torch.Tens
     valid_targets = [t for t in action_targets if t is not None]
 
     if valid_features:
-        print(f"Sample backbone feature shape after mean pooling: {valid_features[0].shape}")
+        print(f"Sample backbone feature shape: {valid_features[0].shape}")
     if valid_targets:
         print(f"Sample action target shape: {valid_targets[0].shape}")
 
@@ -356,28 +347,38 @@ def split_data(
     return train_features, train_targets, test_features, test_targets
 
 
-def main():
-    """Main training function."""
+def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: int = 32, num_epochs: int = 100):
+    """Main training function.
+    
+    Args:
+        feature_type: Type of features to use - "mean_pooled" or "last_vector"
+        data_path: Path to the processed data file (optional)
+        batch_size: Batch size for training
+        num_epochs: Number of training epochs
+    """
     # Set random seeds for reproducibility
     random.seed(42)
     np.random.seed(42)
     torch.manual_seed(42)
 
     # Configuration
-    DATA_PATH = "probe_training_data_150k.parquet"  # Update this path as needed
-    BATCH_SIZE = 32
-    NUM_EPOCHS = 100
+    DATA_PATH = data_path or "probe_training_data_150k_processed.parquet"  # Use processed data
+    FEATURE_TYPE = feature_type
+    BATCH_SIZE = batch_size
+    NUM_EPOCHS = num_epochs
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     print(f"Using device: {DEVICE}")
+    print(f"Feature type: {FEATURE_TYPE}")
 
     # Load data
     if not os.path.exists(DATA_PATH):
         print(f"❌ Data file not found: {DATA_PATH}")
-        print("Please make sure you've run the data extraction notebook first.")
+        print("Please make sure you've run the data extraction and processing notebook first.")
+        print("The processed file should contain 'backbone_features_mean_pooled' and 'backbone_features_last_vector' columns.")
         return
 
-    backbone_features, action_targets = load_probe_data(DATA_PATH)
+    backbone_features, action_targets = load_probe_data(DATA_PATH, feature_type=FEATURE_TYPE)
 
     # Split data
     train_features, train_targets, test_features, test_targets = split_data(
@@ -394,21 +395,20 @@ def main():
 
     # Get dimensions from sample data
     sample_features, sample_target = train_dataset[0]
-    input_dim = sample_features.shape[-1]  # Hidden dimension (e.g., 2048)
+    input_dim = sample_features.shape[-1]  # Should be 2048
     output_dim = sample_target.shape[-1] if len(sample_target.shape) > 0 else 1
 
     print(f"Input dimension: {input_dim}")
     print(f"Output dimension: {output_dim}")
 
-    # Create model
+    # Create linear regression model (no hidden layers)
     model = ActionProbe(
         input_dim=input_dim,
-        hidden_dims=[1024],  # Single hidden layer of size 1024
         output_dim=output_dim,
-        dropout_rate=0.1,
     )
 
     print(f"Model architecture:\n{model}")
+    print("📊 Using linear regression (no hidden layers)")
 
     # Create trainer
     trainer = ProbeTrainer(model, device=DEVICE)
@@ -433,6 +433,7 @@ def main():
 
     print(f"Model saved to: probe/best_probe_model.pth")
     print(f"Training history saved to: probe/training_history.pkl")
+    print(f"Feature type used: {FEATURE_TYPE}")
 
 
 if __name__ == "__main__":
