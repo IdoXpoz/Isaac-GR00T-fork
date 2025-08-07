@@ -16,7 +16,7 @@ import torch
 from torch.utils.data import DataLoader
 from typing import Dict, List, Tuple
 
-from train_probe import ActionProbe, ProbeDataset, load_probe_data, split_data
+from probe.train_probe import ActionProbe, ProbeDataset, load_probe_data, split_data
 
 
 def load_trained_model(model_path: str, input_dim: int, output_dim: int) -> ActionProbe:
