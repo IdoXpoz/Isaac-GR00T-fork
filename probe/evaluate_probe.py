@@ -93,7 +93,7 @@ def detailed_evaluation(model: ActionProbe, dataloader: DataLoader, device: str 
     }
 
 
-def plot_training_history(history_path: str, save_path: str = "probe/training_curves.png"):
+def plot_training_history(history_path: str, save_path: str = None):
     """Plot training curves."""
     with open(history_path, "rb") as f:
         history = pickle.load(f)
@@ -123,9 +123,7 @@ def plot_training_history(history_path: str, save_path: str = "probe/training_cu
     print(f"Training curves saved to: {save_path}")
 
 
-def plot_predictions_vs_targets(
-    predictions: np.ndarray, targets: np.ndarray, save_path: str = "probe/predictions_vs_targets.png"
-):
+def plot_predictions_vs_targets(predictions: np.ndarray, targets: np.ndarray, save_path: str = None):
     """Plot predictions vs targets."""
     if len(targets.shape) > 1 and targets.shape[1] > 1:
         # Multi-dimensional output
@@ -218,15 +216,22 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
         data_path: Path to the processed data file (optional)
         model_path: Path to the trained model file (optional)
     """
-    # Configuration
-    MODEL_PATH = model_path or "probe/best_probe_model.pth"
-    DATA_PATH = data_path or "probe_training_data_150k_processed.parquet"  # Use processed data
+    # Configuration - use mounted drive structure
+    probe_output_dir = f"/content/drive/MyDrive/probes/{feature_type}"
+    MODEL_PATH = model_path or os.path.join(probe_output_dir, "best_probe_model.pth")
+    DATA_PATH = (
+        data_path or "/content/drive/MyDrive/probe_training_data/probe_training_data_150k_processed.parquet"
+    )  # Use processed data
     FEATURE_TYPE = feature_type
-    HISTORY_PATH = "probe/training_history.pkl"
+    HISTORY_PATH = os.path.join(probe_output_dir, "training_history.pkl")
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     print(f"Using device: {DEVICE}")
     print(f"Feature type: {FEATURE_TYPE}")
+
+    # Create output directory
+    os.makedirs(probe_output_dir, exist_ok=True)
+    print(f"📁 Saving evaluation outputs to: {probe_output_dir}")
 
     # Check if files exist
     if not os.path.exists(MODEL_PATH):
@@ -272,18 +277,24 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
     # Plot training history if available
     if os.path.exists(HISTORY_PATH):
         print("\n📈 Plotting training curves...")
-        plot_training_history(HISTORY_PATH)
+        training_curves_path = os.path.join(probe_output_dir, "training_curves.png")
+        plot_training_history(HISTORY_PATH, save_path=training_curves_path)
 
     # Plot predictions vs targets
     print("\n📊 Plotting predictions vs targets...")
-    plot_predictions_vs_targets(metrics["predictions"], metrics["targets"])
+    predictions_path = os.path.join(probe_output_dir, "predictions_vs_targets.png")
+    plot_predictions_vs_targets(metrics["predictions"], metrics["targets"], save_path=predictions_path)
 
     # Save detailed metrics
     metrics_to_save = {k: v for k, v in metrics.items() if k not in ["predictions", "targets"]}
-    with open("probe/evaluation_metrics.pkl", "wb") as f:
+    evaluation_metrics_path = os.path.join(probe_output_dir, "evaluation_metrics.pkl")
+    with open(evaluation_metrics_path, "wb") as f:
         pickle.dump(metrics_to_save, f)
 
-    print(f"\n💾 Evaluation metrics saved to: probe/evaluation_metrics.pkl")
+    print(f"\n💾 Evaluation metrics saved to: {evaluation_metrics_path}")
+    print(f"📈 Training curves saved to: {training_curves_path}")
+    print(f"📊 Predictions plot saved to: {predictions_path}")
+    print(f"📁 All evaluation outputs in: {probe_output_dir}")
     print(f"Feature type used: {FEATURE_TYPE}")
     print("🎉 Evaluation completed!")
 

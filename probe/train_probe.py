@@ -187,7 +187,12 @@ class ProbeTrainer:
         return {"loss": avg_loss, "mse": avg_loss}
 
     def train(
-        self, train_loader: DataLoader, val_loader: DataLoader, num_epochs: int = 100, early_stopping_patience: int = 10
+        self,
+        train_loader: DataLoader,
+        val_loader: DataLoader,
+        num_epochs: int = 100,
+        early_stopping_patience: int = 10,
+        output_dir: str = "probe",
     ) -> Dict[str, List[float]]:
         """
         Train the probe model.
@@ -227,7 +232,8 @@ class ProbeTrainer:
                 best_val_loss = val_loss
                 patience_counter = 0
                 # Save best model
-                torch.save(self.model.state_dict(), "probe/best_probe_model.pth")
+                model_path = os.path.join(output_dir, "best_probe_model.pth")
+                torch.save(self.model.state_dict(), model_path)
             else:
                 patience_counter += 1
 
@@ -362,7 +368,9 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: i
     torch.manual_seed(42)
 
     # Configuration
-    DATA_PATH = data_path or "probe_training_data_150k_processed.parquet"  # Use processed data
+    DATA_PATH = (
+        data_path or "/content/drive/MyDrive/probe_training_data/probe_training_data_150k_processed.parquet"
+    )  # Use processed data
     FEATURE_TYPE = feature_type
     BATCH_SIZE = batch_size
     NUM_EPOCHS = num_epochs
@@ -370,6 +378,12 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: i
 
     print(f"Using device: {DEVICE}")
     print(f"Feature type: {FEATURE_TYPE}")
+
+    # Set up output directory - save to mounted drive
+    output_base_dir = "/content/drive/MyDrive/probes"
+    probe_output_dir = os.path.join(output_base_dir, FEATURE_TYPE)
+    os.makedirs(probe_output_dir, exist_ok=True)
+    print(f"📁 Saving outputs to: {probe_output_dir}")
 
     # Load data
     if not os.path.exists(DATA_PATH):
@@ -420,6 +434,7 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: i
         train_loader=train_loader,
         val_loader=test_loader,  # Using test as validation
         num_epochs=NUM_EPOCHS,
+        output_dir=probe_output_dir,
         early_stopping_patience=15,
     )
 
@@ -430,12 +445,15 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: i
     print(f"Final test MSE: {final_metrics['mse']:.6f}")
 
     # Save training history
-    with open("probe/training_history.pkl", "wb") as f:
+    history_path = os.path.join(probe_output_dir, "training_history.pkl")
+    with open(history_path, "wb") as f:
         pickle.dump(history, f)
 
-    print(f"Model saved to: probe/best_probe_model.pth")
-    print(f"Training history saved to: probe/training_history.pkl")
+    model_path = os.path.join(probe_output_dir, "best_probe_model.pth")
+    print(f"Model saved to: {model_path}")
+    print(f"Training history saved to: {history_path}")
     print(f"Feature type used: {FEATURE_TYPE}")
+    print(f"📁 All outputs saved in: {probe_output_dir}")
 
 
 if __name__ == "__main__":
