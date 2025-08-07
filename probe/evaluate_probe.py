@@ -212,7 +212,7 @@ def print_evaluation_summary(metrics: Dict[str, float]):
 
 def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: str = None):
     """Main evaluation function.
-    
+
     Args:
         feature_type: Type of features to use - should match training configuration
         data_path: Path to the processed data file (optional)
@@ -243,7 +243,7 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
     backbone_features, action_targets = load_probe_data(DATA_PATH, feature_type=FEATURE_TYPE)
 
     # Split data (same split as training)
-    _, _, test_features, test_targets = split_data(backbone_features, action_targets, train_ratio=0.99)
+    _, _, test_features, test_targets = split_data(backbone_features, action_targets, train_ratio=0.98)
 
     # Create test dataset
     test_dataset = ProbeDataset(test_features, test_targets)

@@ -280,7 +280,7 @@ def load_probe_data(data_path: str, feature_type: str = "mean_pooled") -> Tuple[
             # Features are already processed as [2048] vectors
             feature_array = np.array(row[feature_column])
             backbone_tensor = torch.tensor(feature_array, dtype=torch.float32)
-            
+
             # Ensure shape is [2048]
             if backbone_tensor.shape != torch.Size([2048]):
                 print(f"⚠️  Unexpected feature shape: {backbone_tensor.shape}, expected [2048]")
@@ -313,7 +313,7 @@ def load_probe_data(data_path: str, feature_type: str = "mean_pooled") -> Tuple[
 
 
 def split_data(
-    backbone_features: List[torch.Tensor], action_targets: List[torch.Tensor], train_ratio: float = 0.99
+    backbone_features: List[torch.Tensor], action_targets: List[torch.Tensor], train_ratio: float = 0.98
 ) -> Tuple[List[torch.Tensor], List[torch.Tensor], List[torch.Tensor], List[torch.Tensor]]:
     """
     Split data into train and test sets.
@@ -349,7 +349,7 @@ def split_data(
 
 def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: int = 32, num_epochs: int = 100):
     """Main training function.
-    
+
     Args:
         feature_type: Type of features to use - "mean_pooled" or "last_vector"
         data_path: Path to the processed data file (optional)
@@ -375,14 +375,16 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: i
     if not os.path.exists(DATA_PATH):
         print(f"❌ Data file not found: {DATA_PATH}")
         print("Please make sure you've run the data extraction and processing notebook first.")
-        print("The processed file should contain 'backbone_features_mean_pooled' and 'backbone_features_last_vector' columns.")
+        print(
+            "The processed file should contain 'backbone_features_mean_pooled' and 'backbone_features_last_vector' columns."
+        )
         return
 
     backbone_features, action_targets = load_probe_data(DATA_PATH, feature_type=FEATURE_TYPE)
 
     # Split data
     train_features, train_targets, test_features, test_targets = split_data(
-        backbone_features, action_targets, train_ratio=0.99
+        backbone_features, action_targets, train_ratio=0.98
     )
 
     # Create datasets

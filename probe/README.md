@@ -91,7 +91,7 @@ NUM_EPOCHS = 100
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 1e-4
 FEATURE_TYPE = "mean_pooled"  # Options: "mean_pooled" or "last_vector"
-TRAIN_RATIO = 0.99  # 99% train, 1% test
+TRAIN_RATIO = 0.98  # 98% train, 2% test
 DATA_PATH = "probe_training_data_150k_processed.parquet"  # Processed parquet format
 ```
 
