@@ -12,13 +12,14 @@ import os
 import pickle
 import csv
 import random
+import json
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from typing import Dict, List, Tuple
 
-from probe.train_probe import ActionProbe, ProbeDataset, load_probe_data, split_data
+from probe.train_probe import ActionProbe, ProbeDataset, load_probe_data
 
 
 def load_trained_model(model_path: str, input_dim: int, output_dim: int) -> ActionProbe:
@@ -238,26 +239,27 @@ def _validate_required_files(model_path: str, data_path: str) -> bool:
     return True
 
 
-def _build_test_loader(data_path: str, feature_type: str) -> Tuple[DataLoader, ProbeDataset, List[int]]:
-    """Builds the test loader and returns the mapping to original sample indices.
+def _load_split_indices(output_dir: str) -> Tuple[List[int], List[int]]:
+    split_path = os.path.join(output_dir, "split_indices.json")
+    if not os.path.exists(split_path):
+        raise FileNotFoundError(
+            f"Split indices not found at {split_path}. Run training first to create a deterministic split."
+        )
+    with open(split_path, "r") as f:
+        data = json.load(f)
+    return data.get("train_indices", []), data.get("test_indices", [])
 
-    The returned indices correspond to the original position in the full dataset
-    (before filtering out None values) and are aligned with the order of samples
-    inside the returned `test_dataset`.
-    """
+
+def _build_test_loader(
+    data_path: str, feature_type: str, output_dir: str
+) -> Tuple[DataLoader, ProbeDataset, List[int]]:
+    """Build test loader using persisted test indices; returns aligned original indices."""
     backbone_features, action_targets = load_probe_data(data_path, feature_type=feature_type)
-
-    # Reproduce split locally so we can retain the selected test indices
-    indices = list(range(len(backbone_features)))
-    random.shuffle(indices)
-    split_point = int(len(indices) * 0.98)
-    test_indices = indices[split_point:]
+    _, test_indices = _load_split_indices(output_dir)
 
     test_features = [backbone_features[i] for i in test_indices]
     test_targets = [action_targets[i] for i in test_indices]
 
-    # Build the dataset, which will filter out None entries.
-    # Capture the indices of valid samples to align with dataset order.
     valid_test_indices = [
         test_indices[i]
         for i in range(len(test_indices))
@@ -355,7 +357,7 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
         return
 
     # Data
-    test_loader, test_dataset, valid_test_indices = _build_test_loader(DATA_PATH, FEATURE_TYPE)
+    test_loader, test_dataset, valid_test_indices = _build_test_loader(DATA_PATH, FEATURE_TYPE, probe_output_dir)
     input_dim, output_dim = _infer_input_output_dims(test_dataset)
     print(f"Input dimension: {input_dim}")
     print(f"Output dimension: {output_dim}")

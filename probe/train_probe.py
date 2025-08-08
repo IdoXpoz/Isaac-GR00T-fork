@@ -353,6 +353,62 @@ def split_data(
     return train_features, train_targets, test_features, test_targets
 
 
+def _create_or_load_split_indices(
+    output_dir: str,
+    data_path: str,
+    train_ratio: float = 0.98,
+    seed: int = 42,
+) -> Tuple[List[int], List[int]]:
+    """Create or load deterministic split indices shared across feature types.
+
+    - Reads the processed parquet to detect rows valid for BOTH feature types
+      (mean_pooled and last_vector) and with a target.
+    - Persists a single split file one level above the feature-type directory
+      so all feature types reuse the same split.
+    """
+    base_dir = os.path.dirname(output_dir)
+    split_path = os.path.join(base_dir, "split_indices.json")
+    if os.path.exists(split_path):
+        with open(split_path, "r") as f:
+            data = json.load(f)
+        train_indices = data.get("train_indices", [])
+        test_indices = data.get("test_indices", [])
+        print(f"Loaded existing split indices from: {split_path}")
+        return train_indices, test_indices
+
+    # Load DataFrame and compute validity across both feature types
+    df = pd.read_parquet(data_path)
+    feature_cols = ["backbone_features_mean_pooled", "backbone_features_last_vector"]
+    target_col = "action_right_arm_first"
+    missing_cols = [c for c in feature_cols + [target_col] if c not in df.columns]
+    if missing_cols:
+        raise ValueError(
+            f"Missing required columns for split computation: {missing_cols}. Available: {list(df.columns)}"
+        )
+
+    valid_indices = [
+        int(i)
+        for i, row in df.iterrows()
+        if (row[target_col] is not None) and all(row[c] is not None for c in feature_cols)
+    ]
+    print(f"Found {len(valid_indices)} valid samples (targets + both features) for splitting")
+
+    # Deterministic shuffle
+    rng = random.Random(seed)
+    rng.shuffle(valid_indices)
+
+    split_point = int(len(valid_indices) * train_ratio)
+    train_indices = valid_indices[:split_point]
+    test_indices = valid_indices[split_point:]
+
+    # Save to disk (shared across feature types)
+    with open(split_path, "w") as f:
+        json.dump({"train_indices": train_indices, "test_indices": test_indices}, f)
+    print(f"Saved split indices to: {split_path}")
+
+    return train_indices, test_indices
+
+
 def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: int = 32, num_epochs: int = 100):
     """Main training function.
 
@@ -396,10 +452,12 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: i
 
     backbone_features, action_targets = load_probe_data(DATA_PATH, feature_type=FEATURE_TYPE)
 
-    # Split data
-    train_features, train_targets, test_features, test_targets = split_data(
-        backbone_features, action_targets, train_ratio=0.98
-    )
+    # Create/load deterministic split indices and build splits
+    train_indices, test_indices = _create_or_load_split_indices(probe_output_dir, DATA_PATH, train_ratio=0.98, seed=42)
+    train_features = [backbone_features[i] for i in train_indices]
+    train_targets = [action_targets[i] for i in train_indices]
+    test_features = [backbone_features[i] for i in test_indices]
+    test_targets = [action_targets[i] for i in test_indices]
 
     # Create datasets
     train_dataset = ProbeDataset(train_features, train_targets)
