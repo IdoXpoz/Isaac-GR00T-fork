@@ -11,6 +11,7 @@ Author: Generated for GR00T probe analysis
 import os
 import pickle
 import csv
+import random
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -237,12 +238,35 @@ def _validate_required_files(model_path: str, data_path: str) -> bool:
     return True
 
 
-def _build_test_loader(data_path: str, feature_type: str) -> Tuple[DataLoader, ProbeDataset]:
+def _build_test_loader(data_path: str, feature_type: str) -> Tuple[DataLoader, ProbeDataset, List[int]]:
+    """Builds the test loader and returns the mapping to original sample indices.
+
+    The returned indices correspond to the original position in the full dataset
+    (before filtering out None values) and are aligned with the order of samples
+    inside the returned `test_dataset`.
+    """
     backbone_features, action_targets = load_probe_data(data_path, feature_type=feature_type)
-    _, _, test_features, test_targets = split_data(backbone_features, action_targets, train_ratio=0.98)
+
+    # Reproduce split locally so we can retain the selected test indices
+    indices = list(range(len(backbone_features)))
+    random.shuffle(indices)
+    split_point = int(len(indices) * 0.98)
+    test_indices = indices[split_point:]
+
+    test_features = [backbone_features[i] for i in test_indices]
+    test_targets = [action_targets[i] for i in test_indices]
+
+    # Build the dataset, which will filter out None entries.
+    # Capture the indices of valid samples to align with dataset order.
+    valid_test_indices = [
+        test_indices[i]
+        for i in range(len(test_indices))
+        if test_features[i] is not None and test_targets[i] is not None
+    ]
+
     test_dataset = ProbeDataset(test_features, test_targets)
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
-    return test_loader, test_dataset
+    return test_loader, test_dataset, valid_test_indices
 
 
 def _infer_input_output_dims(dataset: ProbeDataset) -> Tuple[int, int]:
@@ -267,7 +291,13 @@ def _plot_artifacts_if_available(
     return training_curves_path, predictions_path
 
 
-def _save_first_n_predictions_csv(predictions: np.ndarray, targets: np.ndarray, n: int, output_dir: str) -> str:
+def _save_first_n_predictions_csv(
+    predictions: np.ndarray,
+    targets: np.ndarray,
+    n: int,
+    output_dir: str,
+    sample_indices: List[int],
+) -> str:
     first_n = min(n, predictions.shape[0])
     preds = predictions[:first_n]
     targs = targets[:first_n]
@@ -278,13 +308,19 @@ def _save_first_n_predictions_csv(predictions: np.ndarray, targets: np.ndarray, 
         targs = targs.reshape(-1, 1)
 
     num_dims = preds.shape[1]
-    csv_headers = ["index"] + [f"pred_{i}" for i in range(num_dims)] + [f"target_{i}" for i in range(num_dims)]
+    csv_headers = (
+        ["index", "sample_index"] + [f"pred_{i}" for i in range(num_dims)] + [f"target_{i}" for i in range(num_dims)]
+    )
     predictions_csv_path = os.path.join(output_dir, "first_100_predictions.csv")
     with open(predictions_csv_path, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(csv_headers)
         for idx in range(first_n):
-            row = [idx] + preds[idx].tolist() + targs[idx].tolist()
+            row = (
+                [idx, sample_indices[idx] if idx < len(sample_indices) else "NA"]
+                + preds[idx].tolist()
+                + targs[idx].tolist()
+            )
             writer.writerow(row)
     return predictions_csv_path
 
@@ -313,7 +349,7 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
         return
 
     # Data
-    test_loader, test_dataset = _build_test_loader(DATA_PATH, FEATURE_TYPE)
+    test_loader, test_dataset, valid_test_indices = _build_test_loader(DATA_PATH, FEATURE_TYPE)
     input_dim, output_dim = _infer_input_output_dims(test_dataset)
     print(f"Input dimension: {input_dim}")
     print(f"Output dimension: {output_dim}")
@@ -335,7 +371,11 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
 
     # Artifacts
     predictions_csv_path = _save_first_n_predictions_csv(
-        metrics["predictions"], metrics["targets"], n=100, output_dir=probe_output_dir
+        metrics["predictions"],
+        metrics["targets"],
+        n=100,
+        output_dir=probe_output_dir,
+        sample_indices=valid_test_indices,
     )
     evaluation_metrics_path = _save_metrics_pickle(metrics, probe_output_dir)
 
