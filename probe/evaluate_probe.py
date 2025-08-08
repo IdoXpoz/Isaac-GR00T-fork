@@ -342,6 +342,12 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {DEVICE}")
     print(f"Feature type: {FEATURE_TYPE}")
+
+    # Deterministic seeding for reproducible splits and predictions
+    random.seed(42)
+    np.random.seed(42)
+    torch.manual_seed(42)
+
     _create_output_directory_if_missing(probe_output_dir)
 
     # Validate inputs
