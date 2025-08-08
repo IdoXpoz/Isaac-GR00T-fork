@@ -10,6 +10,7 @@ Author: Generated for GR00T probe analysis
 
 import os
 import pickle
+import csv
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -275,6 +276,7 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
     print_evaluation_summary(metrics)
 
     # Plot training history if available
+    training_curves_path = None
     if os.path.exists(HISTORY_PATH):
         print("\n📈 Plotting training curves...")
         training_curves_path = os.path.join(probe_output_dir, "training_curves.png")
@@ -285,6 +287,26 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
     predictions_path = os.path.join(probe_output_dir, "predictions_vs_targets.png")
     plot_predictions_vs_targets(metrics["predictions"], metrics["targets"], save_path=predictions_path)
 
+    # Save first 100 predictions vs targets to CSV
+    first_n = min(100, metrics["predictions"].shape[0])
+    preds = metrics["predictions"][:first_n]
+    targs = metrics["targets"][:first_n]
+
+    if preds.ndim == 1:
+        preds = preds.reshape(-1, 1)
+    if targs.ndim == 1:
+        targs = targs.reshape(-1, 1)
+
+    num_dims = preds.shape[1]
+    csv_headers = ["index"] + [f"pred_{i}" for i in range(num_dims)] + [f"target_{i}" for i in range(num_dims)]
+    predictions_csv_path = os.path.join(probe_output_dir, "first_100_predictions.csv")
+    with open(predictions_csv_path, "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(csv_headers)
+        for idx in range(first_n):
+            row = [idx] + preds[idx].tolist() + targs[idx].tolist()
+            writer.writerow(row)
+
     # Save detailed metrics
     metrics_to_save = {k: v for k, v in metrics.items() if k not in ["predictions", "targets"]}
     evaluation_metrics_path = os.path.join(probe_output_dir, "evaluation_metrics.pkl")
@@ -292,8 +314,10 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
         pickle.dump(metrics_to_save, f)
 
     print(f"\n💾 Evaluation metrics saved to: {evaluation_metrics_path}")
-    print(f"📈 Training curves saved to: {training_curves_path}")
+    if training_curves_path is not None:
+        print(f"📈 Training curves saved to: {training_curves_path}")
     print(f"📊 Predictions plot saved to: {predictions_path}")
+    print(f"🧾 First 100 predictions saved to: {predictions_csv_path}")
     print(f"📁 All evaluation outputs in: {probe_output_dir}")
     print(f"Feature type used: {FEATURE_TYPE}")
     print("🎉 Evaluation completed!")
