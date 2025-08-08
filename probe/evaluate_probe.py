@@ -239,8 +239,9 @@ def _validate_required_files(model_path: str, data_path: str) -> bool:
     return True
 
 
-def _load_split_indices(output_dir: str) -> Tuple[List[int], List[int]]:
-    split_path = os.path.join(output_dir, "split_indices.json")
+def _load_split_indices() -> Tuple[List[int], List[int]]:
+    """Load split indices from a shared, hardcoded location."""
+    split_path = "/content/drive/MyDrive/probes/split_indices.json"
     if not os.path.exists(split_path):
         raise FileNotFoundError(
             f"Split indices not found at {split_path}. Run training first to create a deterministic split."
@@ -250,12 +251,10 @@ def _load_split_indices(output_dir: str) -> Tuple[List[int], List[int]]:
     return data.get("train_indices", []), data.get("test_indices", [])
 
 
-def _build_test_loader(
-    data_path: str, feature_type: str, output_dir: str
-) -> Tuple[DataLoader, ProbeDataset, List[int]]:
+def _build_test_loader(data_path: str, feature_type: str) -> Tuple[DataLoader, ProbeDataset, List[int]]:
     """Build test loader using persisted test indices; returns aligned original indices."""
     backbone_features, action_targets = load_probe_data(data_path, feature_type=feature_type)
-    _, test_indices = _load_split_indices(output_dir)
+    _, test_indices = _load_split_indices()
 
     test_features = [backbone_features[i] for i in test_indices]
     test_targets = [action_targets[i] for i in test_indices]
@@ -357,7 +356,7 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
         return
 
     # Data
-    test_loader, test_dataset, valid_test_indices = _build_test_loader(DATA_PATH, FEATURE_TYPE, probe_output_dir)
+    test_loader, test_dataset, valid_test_indices = _build_test_loader(DATA_PATH, FEATURE_TYPE)
     input_dim, output_dim = _infer_input_output_dims(test_dataset)
     print(f"Input dimension: {input_dim}")
     print(f"Output dimension: {output_dim}")
