@@ -209,88 +209,68 @@ def print_evaluation_summary(metrics: Dict[str, float]):
     print("\n" + "=" * 60)
 
 
-def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: str = None):
-    """Main evaluation function.
-
-    Args:
-        feature_type: Type of features to use - should match training configuration
-        data_path: Path to the processed data file (optional)
-        model_path: Path to the trained model file (optional)
-    """
-    # Configuration - use mounted drive structure
+def _configure_paths(feature_type: str, data_path: str, model_path: str) -> Tuple[str, str, str, str, str]:
+    """Return output dir, model path, data path, history path, feature type label."""
     probe_output_dir = f"/content/drive/MyDrive/probes/{feature_type}"
-    MODEL_PATH = model_path or os.path.join(probe_output_dir, "best_probe_model.pth")
-    DATA_PATH = (
+    model_path_final = model_path or os.path.join(probe_output_dir, "best_probe_model.pth")
+    data_path_final = (
         data_path or "/content/drive/MyDrive/probe_training_data/probe_training_data_150k_processed.parquet"
-    )  # Use processed data
-    FEATURE_TYPE = feature_type
-    HISTORY_PATH = os.path.join(probe_output_dir, "training_history.pkl")
-    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    )
+    history_path = os.path.join(probe_output_dir, "training_history.pkl")
+    return probe_output_dir, model_path_final, data_path_final, history_path, feature_type
 
-    print(f"Using device: {DEVICE}")
-    print(f"Feature type: {FEATURE_TYPE}")
 
-    # Create output directory
-    os.makedirs(probe_output_dir, exist_ok=True)
-    print(f"📁 Saving evaluation outputs to: {probe_output_dir}")
+def _create_output_directory_if_missing(path: str) -> None:
+    os.makedirs(path, exist_ok=True)
+    print(f"📁 Saving evaluation outputs to: {path}")
 
-    # Check if files exist
-    if not os.path.exists(MODEL_PATH):
-        print(f"❌ Model file not found: {MODEL_PATH}")
+
+def _validate_required_files(model_path: str, data_path: str) -> bool:
+    if not os.path.exists(model_path):
+        print(f"❌ Model file not found: {model_path}")
         print("Please train the probe first using train_probe.py")
-        return
-
-    if not os.path.exists(DATA_PATH):
-        print(f"❌ Data file not found: {DATA_PATH}")
+        return False
+    if not os.path.exists(data_path):
+        print(f"❌ Data file not found: {data_path}")
         print("Please make sure you've run the data extraction and processing notebook first.")
-        return
+        return False
+    return True
 
-    # Load data with specified feature type
-    backbone_features, action_targets = load_probe_data(DATA_PATH, feature_type=FEATURE_TYPE)
 
-    # Split data (same split as training)
+def _build_test_loader(data_path: str, feature_type: str) -> Tuple[DataLoader, ProbeDataset]:
+    backbone_features, action_targets = load_probe_data(data_path, feature_type=feature_type)
     _, _, test_features, test_targets = split_data(backbone_features, action_targets, train_ratio=0.98)
-
-    # Create test dataset
     test_dataset = ProbeDataset(test_features, test_targets)
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+    return test_loader, test_dataset
 
-    # Get dimensions
-    sample_features, sample_target = test_dataset[0]
-    input_dim = sample_features.shape[-1]  # Should be 2048
+
+def _infer_input_output_dims(dataset: ProbeDataset) -> Tuple[int, int]:
+    sample_features, sample_target = dataset[0]
+    input_dim = sample_features.shape[-1]
     output_dim = sample_target.shape[-1] if len(sample_target.shape) > 0 else 1
+    return input_dim, output_dim
 
-    print(f"Input dimension: {input_dim}")
-    print(f"Output dimension: {output_dim}")
-    print(f"Test samples: {len(test_dataset)}")
 
-    # Load trained model (linear regression)
-    model = load_trained_model(MODEL_PATH, input_dim, output_dim)
-    print(f"✅ Loaded trained linear regression model from {MODEL_PATH}")
-
-    # Evaluate model
-    print("\n🔍 Evaluating model...")
-    metrics = detailed_evaluation(model, test_loader, device=DEVICE)
-
-    # Print summary
-    print_evaluation_summary(metrics)
-
-    # Plot training history if available
+def _plot_artifacts_if_available(
+    history_path: str, output_dir: str, predictions: np.ndarray, targets: np.ndarray
+) -> Tuple[str, str]:
     training_curves_path = None
-    if os.path.exists(HISTORY_PATH):
+    if os.path.exists(history_path):
         print("\n📈 Plotting training curves...")
-        training_curves_path = os.path.join(probe_output_dir, "training_curves.png")
-        plot_training_history(HISTORY_PATH, save_path=training_curves_path)
+        training_curves_path = os.path.join(output_dir, "training_curves.png")
+        plot_training_history(history_path, save_path=training_curves_path)
 
-    # Plot predictions vs targets
     print("\n📊 Plotting predictions vs targets...")
-    predictions_path = os.path.join(probe_output_dir, "predictions_vs_targets.png")
-    plot_predictions_vs_targets(metrics["predictions"], metrics["targets"], save_path=predictions_path)
+    predictions_path = os.path.join(output_dir, "predictions_vs_targets.png")
+    plot_predictions_vs_targets(predictions, targets, save_path=predictions_path)
+    return training_curves_path, predictions_path
 
-    # Save first 100 predictions vs targets to CSV
-    first_n = min(100, metrics["predictions"].shape[0])
-    preds = metrics["predictions"][:first_n]
-    targs = metrics["targets"][:first_n]
+
+def _save_first_n_predictions_csv(predictions: np.ndarray, targets: np.ndarray, n: int, output_dir: str) -> str:
+    first_n = min(n, predictions.shape[0])
+    preds = predictions[:first_n]
+    targs = targets[:first_n]
 
     if preds.ndim == 1:
         preds = preds.reshape(-1, 1)
@@ -299,20 +279,67 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
 
     num_dims = preds.shape[1]
     csv_headers = ["index"] + [f"pred_{i}" for i in range(num_dims)] + [f"target_{i}" for i in range(num_dims)]
-    predictions_csv_path = os.path.join(probe_output_dir, "first_100_predictions.csv")
+    predictions_csv_path = os.path.join(output_dir, "first_100_predictions.csv")
     with open(predictions_csv_path, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(csv_headers)
         for idx in range(first_n):
             row = [idx] + preds[idx].tolist() + targs[idx].tolist()
             writer.writerow(row)
+    return predictions_csv_path
 
-    # Save detailed metrics
+
+def _save_metrics_pickle(metrics: Dict[str, float], output_dir: str) -> str:
     metrics_to_save = {k: v for k, v in metrics.items() if k not in ["predictions", "targets"]}
-    evaluation_metrics_path = os.path.join(probe_output_dir, "evaluation_metrics.pkl")
+    evaluation_metrics_path = os.path.join(output_dir, "evaluation_metrics.pkl")
     with open(evaluation_metrics_path, "wb") as f:
         pickle.dump(metrics_to_save, f)
+    return evaluation_metrics_path
 
+
+def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: str = None):
+    """Main evaluation function orchestrating the full probe evaluation pipeline."""
+    # Setup
+    probe_output_dir, MODEL_PATH, DATA_PATH, HISTORY_PATH, FEATURE_TYPE = _configure_paths(
+        feature_type, data_path, model_path
+    )
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using device: {DEVICE}")
+    print(f"Feature type: {FEATURE_TYPE}")
+    _create_output_directory_if_missing(probe_output_dir)
+
+    # Validate inputs
+    if not _validate_required_files(MODEL_PATH, DATA_PATH):
+        return
+
+    # Data
+    test_loader, test_dataset = _build_test_loader(DATA_PATH, FEATURE_TYPE)
+    input_dim, output_dim = _infer_input_output_dims(test_dataset)
+    print(f"Input dimension: {input_dim}")
+    print(f"Output dimension: {output_dim}")
+    print(f"Test samples: {len(test_dataset)}")
+
+    # Model
+    model = load_trained_model(MODEL_PATH, input_dim, output_dim)
+    print(f"✅ Loaded trained linear regression model from {MODEL_PATH}")
+
+    # Evaluation
+    print("\n🔍 Evaluating model...")
+    metrics = detailed_evaluation(model, test_loader, device=DEVICE)
+    print_evaluation_summary(metrics)
+
+    # Plots
+    training_curves_path, predictions_path = _plot_artifacts_if_available(
+        HISTORY_PATH, probe_output_dir, metrics["predictions"], metrics["targets"]
+    )
+
+    # Artifacts
+    predictions_csv_path = _save_first_n_predictions_csv(
+        metrics["predictions"], metrics["targets"], n=100, output_dir=probe_output_dir
+    )
+    evaluation_metrics_path = _save_metrics_pickle(metrics, probe_output_dir)
+
+    # Final messages
     print(f"\n💾 Evaluation metrics saved to: {evaluation_metrics_path}")
     if training_curves_path is not None:
         print(f"📈 Training curves saved to: {training_curves_path}")
