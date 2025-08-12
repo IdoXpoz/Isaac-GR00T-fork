@@ -131,8 +131,20 @@ def plot_predictions_vs_targets(predictions: np.ndarray, targets: np.ndarray, sa
     if len(targets.shape) > 1 and targets.shape[1] > 1:
         # Multi-dimensional output
         n_dims = targets.shape[1]
-        fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-        axes = axes.flatten()
+
+        # Calculate grid size dynamically based on number of dimensions
+        n_cols = min(3, n_dims)  # Max 3 columns
+        n_rows = (n_dims + n_cols - 1) // n_cols  # Ceiling division
+
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(4 * n_cols, 4 * n_rows))
+
+        # Handle single subplot case
+        if n_dims == 1:
+            axes = [axes]
+        elif n_rows == 1:
+            axes = axes if n_cols > 1 else [axes]
+        else:
+            axes = axes.flatten()
 
         for i in range(n_dims):
             ax = axes[i]
@@ -149,8 +161,9 @@ def plot_predictions_vs_targets(predictions: np.ndarray, targets: np.ndarray, sa
             ax.grid(True, alpha=0.3)
             ax.legend()
 
-        # Hide unused subplots
-        for i in range(n_dims, 4):
+        # Hide unused subplots if any
+        total_subplots = n_rows * n_cols
+        for i in range(n_dims, total_subplots):
             axes[i].set_visible(False)
 
     else:
