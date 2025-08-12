@@ -425,7 +425,7 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: i
 
     # Configuration
     DATA_PATH = (
-        data_path or "/content/drive/MyDrive/probe_training_data/probe_training_data_150k_processed.parquet"
+        data_path or "/content/drive/MyDrive/probe_training_data/probe_training_data_60k_processed.parquet"
     )  # Use processed data
     FEATURE_TYPE = feature_type
     BATCH_SIZE = batch_size

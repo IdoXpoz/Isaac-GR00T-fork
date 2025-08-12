@@ -206,7 +206,7 @@ def _configure_paths(feature_type: str, data_path: str, model_path: str) -> Tupl
     probe_output_dir = f"/content/drive/MyDrive/probes/{feature_type}"
     model_path_final = model_path or os.path.join(probe_output_dir, "best_probe_model.pth")
     data_path_final = (
-        data_path or "/content/drive/MyDrive/probe_training_data/probe_training_data_150k_processed.parquet"
+        data_path or "/content/drive/MyDrive/probe_training_data/probe_training_data_60k_processed.parquet"
     )
     history_path = os.path.join(probe_output_dir, "training_history.pkl")
     return probe_output_dir, model_path_final, data_path_final, history_path, feature_type
