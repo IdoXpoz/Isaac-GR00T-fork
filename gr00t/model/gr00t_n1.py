@@ -201,6 +201,24 @@ class GR00T_N1_5(PreTrainedModel):
 
         return backbone_outputs
 
+    def get_VLM_selected_layers_output(self, inputs: dict, selected_layers: list[int]) -> BatchFeature:
+        backbone_inputs, _ = self.prepare_input(inputs)
+        backbone_outputs_per_layer = self.backbone.forward_eagle_and_return_selected_layers(
+            backbone_inputs, selected_layers
+        )
+
+        # validate outputs per layer like we did above
+        for i in range(len(backbone_outputs_per_layer)):
+            if not isinstance(backbone_outputs_per_layer[i], BatchFeature):
+                error_msg = ERROR_MSG
+                error_msg += f"\n{isinstance(backbone_outputs_per_layer[i], BatchFeature)=}"
+                error_msg += f"\n{BACKBONE_FEATURE_KEY in backbone_outputs_per_layer[i]=}"
+                if BACKBONE_FEATURE_KEY in backbone_outputs_per_layer[i]:
+                    error_msg += f"\n{backbone_outputs_per_layer[i][BACKBONE_FEATURE_KEY].shape=}"
+                raise ValueError(error_msg)
+
+        return backbone_outputs_per_layer
+
     def prepare_input(self, inputs) -> Tuple[BatchFeature, BatchFeature]:
         self.validate_inputs(inputs)
         backbone_inputs = self.backbone.prepare_input(inputs)

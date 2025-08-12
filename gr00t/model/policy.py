@@ -218,6 +218,33 @@ class Gr00tPolicy(BasePolicy):
 
         return backbone_features
 
+    def get_VLM_selected_layers_output(
+        self, observations: Dict[str, Any], selected_layers: list[int]
+    ) -> Dict[str, Any]:
+        # Handle batching the same way as get_action
+        is_batch = self._check_state_is_batched(observations)
+        if not is_batch:
+            observations = unsqueeze_dict_values(observations)
+
+        # Ensure keys are all numpy arrays (same as get_action)
+        for k, v in observations.items():
+            if not isinstance(v, np.ndarray):
+                observations[k] = np.array(v)
+
+        # Apply the same transforms as get_action
+        normalized_input = self.apply_transforms(observations)
+
+        # Extract backbone features using the model's new method
+        backbone_features_per_layer = self._get_VLM_selected_layers_output_from_normalized_input(normalized_input)
+
+        # Remove batch dimension if input wasn't batched
+        for i in range(len(backbone_features_per_layer)):
+            if not is_batch:
+                backbone_features_per_layer[i] = squeeze_dict_values(backbone_features_per_layer[i])
+                backbone_features_per_layer[i]["selected_layer"] = selected_layers[i]
+
+        return backbone_features_per_layer
+
     def _get_action_from_normalized_input(self, normalized_input: Dict[str, Any]) -> torch.Tensor:
         # Set up autocast context if needed
         with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=COMPUTE_DTYPE):
