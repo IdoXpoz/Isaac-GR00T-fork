@@ -130,7 +130,7 @@ def plot_predictions_vs_targets(predictions: np.ndarray, targets: np.ndarray, sa
     """Plot predictions vs targets."""
     if len(targets.shape) > 1 and targets.shape[1] > 1:
         # Multi-dimensional output
-        n_dims = min(targets.shape[1], 4)  # Plot max 4 dimensions
+        n_dims = targets.shape[1]
         fig, axes = plt.subplots(2, 2, figsize=(12, 10))
         axes = axes.flatten()
 
@@ -196,17 +196,7 @@ def print_evaluation_summary(metrics: Dict[str, float]):
     print(f"\n🔗 Correlation Analysis:")
     avg_corr = np.mean(metrics["correlations"])
     print(f"  Average Correlation: {avg_corr:.4f}")
-
-    if avg_corr > 0.8:
-        quality = "Excellent 🌟"
-    elif avg_corr > 0.6:
-        quality = "Good ✅"
-    elif avg_corr > 0.4:
-        quality = "Moderate ⚠️"
-    else:
-        quality = "Poor ❌"
-
-    print(f"  Quality Assessment: {quality}")
+    print(f"  correlations per dimension: {metrics['correlations']}")
 
     print("\n" + "=" * 60)
 
