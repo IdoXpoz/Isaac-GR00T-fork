@@ -165,7 +165,7 @@ def extract_batches(
         print(f"❌ Error during extraction: {e}")
 
     # Final summary
-    final_progress = load_progress()
+    final_progress = load_progress(output_dir)
     print(f"\n📊 Extraction summary:")
     print(f"   • Total extracted: {final_progress['total_extracted']:,} samples")
     print(f"   • Batches completed: {len(final_progress['completed_batches'])}")
