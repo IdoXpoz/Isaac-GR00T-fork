@@ -38,8 +38,5 @@ def extract_single_step_data(policy, step_data, dataset_info):
         }
 
         print(f"data_dict: {data_dict}")
-        # print all shapes to make sure we have 1d arrays
-        for key, value in data_dict.items():
-            print(f"{key}: {value.shape}")
 
         return data_dict
