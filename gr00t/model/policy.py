@@ -240,13 +240,20 @@ class Gr00tPolicy(BasePolicy):
             normalized_input, selected_layers
         )
 
-        # Remove batch dimension if input wasn't batched
+        # Convert to mutable list and process each layer
+        processed_features = []
         for i in range(len(backbone_features_per_layer)):
-            if not is_batch:
-                backbone_features_per_layer[i] = squeeze_dict_values(backbone_features_per_layer[i])
-                backbone_features_per_layer[i]["selected_layer"] = selected_layers[i]
+            layer_features = backbone_features_per_layer[i]
 
-        return backbone_features_per_layer
+            # Remove batch dimension if input wasn't batched
+            if not is_batch:
+                layer_features = squeeze_dict_values(layer_features)
+
+            # Add selected layer information
+            layer_features["selected_layer"] = selected_layers[i]
+            processed_features.append(layer_features)
+
+        return processed_features
 
     def _get_action_from_normalized_input(self, normalized_input: Dict[str, Any]) -> torch.Tensor:
         # Set up autocast context if needed
