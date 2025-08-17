@@ -13,7 +13,7 @@ from gr00t.experiment.data_config import DATA_CONFIG_MAP
 TARGET_TOTAL_SAMPLES = 60000
 BATCH_SIZE = 1000
 TASK_NAME = "gr1_arms_waist.TrayToPot"
-DATASET_ROOT = "/content/drive/MyDrive/gr1_arms_waist"
+DATASET_ROOT = "/content/drive/MyDrive/gr00t_dataset"
 EMBODIMENT_TAG = "gr1"
 MODEL_PATH = "nvidia/GR00T-N1.5-3B"
 MERGED_BATCHES_FILE_NAME = "merged_batches.parquet"
