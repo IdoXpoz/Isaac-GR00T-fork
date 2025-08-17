@@ -118,8 +118,6 @@ def extract_batches(
                     "total_samples": len(dataset),
                     "global_index": progress["total_extracted"] + samples_processed,
                 }
-                print("progress['total_extracted']: ", progress["total_extracted"])
-                print("samples_processed: ", samples_processed)
 
                 # Extract data
                 data_dict = extract_single_step_data(policy, step_data, dataset_info)
