@@ -25,7 +25,7 @@ def get_batch_filename(batch_id, output_dir: str):
     return os.path.join(batch_output_dir, f"batch_{batch_id:04d}.parquet")
 
 
-def save_batch_data(batch_data, batch_id):
+def save_batch_data(batch_data, batch_id, output_dir: str):
     """Save a single batch to parquet file"""
 
     # Prepare data for DataFrame
@@ -38,7 +38,7 @@ def save_batch_data(batch_data, batch_id):
     df = pd.DataFrame(rows)
 
     # Save as parquet with compression
-    batch_file = get_batch_filename(batch_id)
+    batch_file = get_batch_filename(batch_id, output_dir)
     df.to_parquet(batch_file, compression="snappy", index=False)
 
     # Save batch metadata separately
@@ -125,7 +125,7 @@ def extract_batches(
                 samples_processed += 1
 
                 if len(current_batch_data) >= BATCH_SIZE:
-                    _, batch_size_actual = save_batch_data(current_batch_data, batch_id)
+                    _, batch_size_actual = save_batch_data(current_batch_data, batch_id, output_dir)
 
                     # Update progress
                     progress["completed_batches"].append(batch_id)
