@@ -28,6 +28,10 @@ def get_batch_filename(batch_id, output_dir: str):
 def save_batch_data(batch_data, batch_id, output_dir: str):
     """Save a single batch to parquet file"""
 
+    # Ensure the batches_parquet directory exists
+    batch_output_dir = os.path.join(output_dir, "batches_parquet")
+    os.makedirs(batch_output_dir, exist_ok=True)
+
     # Prepare data for DataFrame
     rows = []
 
@@ -152,7 +156,7 @@ def extract_batches(
 
         # Save any remaining data in the last batch
         if current_batch_data:
-            _, batch_size_actual = save_batch_data(current_batch_data, batch_id)
+            _, batch_size_actual = save_batch_data(current_batch_data, batch_id, output_dir)
             progress["completed_batches"].append(batch_id)
             progress["total_extracted"] += batch_size_actual
             progress["last_batch_id"] = batch_id
