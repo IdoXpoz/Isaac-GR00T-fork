@@ -296,7 +296,8 @@ class Gr00tPolicy(BasePolicy):
             layer_features = {}
             for key, value in layer_output.items():
                 if isinstance(value, torch.Tensor):
-                    layer_features[key] = value.cpu()
+                    # Convert to float32 first to avoid BFloat16 compatibility issues
+                    layer_features[key] = value.cpu().float()
                 else:
                     layer_features[key] = value
             processed_outputs.append(layer_features)
