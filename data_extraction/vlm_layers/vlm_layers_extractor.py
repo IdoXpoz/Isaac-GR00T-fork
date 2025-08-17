@@ -10,7 +10,7 @@ def extract_single_step_data(policy, step_data, dataset_info):
     Returns:
         data_dict: Dictionary with dataset, step_data, vlm_output, final_output
     """
-    print(f"Extracting data for sample {dataset_info['sample_index']}")
+
     selected_layers = [1, 3, 6, 9, 12]
     with torch.no_grad():
         # Extract VLM backbone features (without action head)
