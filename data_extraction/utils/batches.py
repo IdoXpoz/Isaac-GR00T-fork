@@ -2,7 +2,7 @@ import os
 import json
 import glob
 import pandas as pd
-import tqdm
+from tqdm import tqdm
 from datetime import datetime
 from data_extraction.utils.progress import load_progress, save_progress
 from data_extraction.vlm_layers.vlm_layers_extractor import extract_single_step_data
