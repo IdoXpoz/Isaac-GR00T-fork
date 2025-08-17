@@ -6,9 +6,9 @@ import tqdm
 from datetime import datetime
 from data_extraction.utils.progress import load_progress, save_progress
 from data_extraction.vlm_layers.vlm_layers_extractor import extract_single_step_data
-from data_extraction.utils.modality_config import modality_config
-from data_extraction.utils.dataset import LeRobotSingleDataset
-from data_extraction.utils.policy import Gr00tPolicy
+from gr00t.model.policy import Gr00tPolicy
+from gr00t.data.dataset import LeRobotSingleDataset
+from gr00t.experiment.data_config import DATA_CONFIG_MAP
 
 TARGET_TOTAL_SAMPLES = 60000
 BATCH_SIZE = 1000
@@ -77,6 +77,7 @@ def extract_batches(
 
     # Load dataset
     task_path = os.path.join(DATASET_ROOT, TASK_NAME)
+    modality_config = DATA_CONFIG_MAP["fourier_gr1_arms_waist"].modality_config()
 
     print(f"🔄 Loading dataset: {TASK_NAME}")
     dataset = LeRobotSingleDataset(
