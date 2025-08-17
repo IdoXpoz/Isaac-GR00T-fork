@@ -108,7 +108,6 @@ def extract_batches(
             range(start_index, min(start_index + remaining_samples, len(dataset))), desc="Extracting batches"
         ):
             try:
-                print(f"Processing sample {i}")
                 # Get sample data
                 step_data = dataset[i]
 

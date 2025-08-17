@@ -221,6 +221,7 @@ class Gr00tPolicy(BasePolicy):
     def get_VLM_selected_layers_output(
         self, observations: Dict[str, Any], selected_layers: list[int]
     ) -> Dict[str, Any]:
+        print(f"entered policy.get_VLM_selected_layers_output")
         # Handle batching the same way as get_action
         is_batch = self._check_state_is_batched(observations)
         if not is_batch:
