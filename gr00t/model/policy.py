@@ -284,13 +284,24 @@ class Gr00tPolicy(BasePolicy):
 
     def _get_VLM_selected_layers_output_from_normalized_input(
         self, normalized_input: Dict[str, Any], selected_layers: list[int]
-    ) -> Dict[str, Any]:
+    ) -> list[Dict[str, Any]]:
         """Extract backbone features from normalized input."""
         # Set up autocast context (same as _get_action_from_normalized_input)
         with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=COMPUTE_DTYPE):
             backbone_outputs = self.model.get_VLM_selected_layers_output(normalized_input, selected_layers)
 
-        return backbone_outputs
+        # Convert BatchFeature to regular dict and move to CPU for each layer
+        processed_outputs = []
+        for layer_output in backbone_outputs:
+            layer_features = {}
+            for key, value in layer_output.items():
+                if isinstance(value, torch.Tensor):
+                    layer_features[key] = value.cpu()
+                else:
+                    layer_features[key] = value
+            processed_outputs.append(layer_features)
+
+        return processed_outputs
 
     def get_modality_config(self) -> Dict[str, ModalityConfig]:
         """
