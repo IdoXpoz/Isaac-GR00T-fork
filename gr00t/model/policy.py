@@ -236,7 +236,9 @@ class Gr00tPolicy(BasePolicy):
         normalized_input = self.apply_transforms(observations)
 
         # Extract backbone features using the model's new method
-        backbone_features_per_layer = self._get_VLM_selected_layers_output_from_normalized_input(normalized_input)
+        backbone_features_per_layer = self._get_VLM_selected_layers_output_from_normalized_input(
+            normalized_input, selected_layers
+        )
 
         # Remove batch dimension if input wasn't batched
         for i in range(len(backbone_features_per_layer)):
@@ -272,6 +274,16 @@ class Gr00tPolicy(BasePolicy):
                 backbone_features[key] = value
 
         return backbone_features
+
+    def _get_VLM_selected_layers_output_from_normalized_input(
+        self, normalized_input: Dict[str, Any], selected_layers: list[int]
+    ) -> Dict[str, Any]:
+        """Extract backbone features from normalized input."""
+        # Set up autocast context (same as _get_action_from_normalized_input)
+        with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=COMPUTE_DTYPE):
+            backbone_outputs = self.model.get_VLM_selected_layers_output(normalized_input, selected_layers)
+
+        return backbone_outputs
 
     def get_modality_config(self) -> Dict[str, ModalityConfig]:
         """
