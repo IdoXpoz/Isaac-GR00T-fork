@@ -30,8 +30,8 @@ def extract_single_step_data(policy, step_data, dataset_info):
 
         # Create the data in user's specified format
         data_dict = {
-            "dataset": dataset_info,  # Dataset name and info
-            "step_data": step_data,  # Original input data
+            "sample_index": dataset_info["sample_index"],
+            "global_index": dataset_info["global_index"],
             **{f"mean_pooled_layer_{i}": vlm_output[i]["mean_pooled"] for i in range(len(vlm_output))},
             **{f"last_vector_layer_{i}": vlm_output[i]["last_vector"] for i in range(len(vlm_output))},
             "action_right_arm": action_right_arm,
