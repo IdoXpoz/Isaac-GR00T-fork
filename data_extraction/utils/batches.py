@@ -135,7 +135,7 @@ def extract_batches(
                     progress["completed_batches"].append(batch_id)
                     progress["total_extracted"] += batch_size_actual
                     progress["last_batch_id"] = batch_id
-                    save_progress(progress)
+                    save_progress(progress, output_dir)
 
                     print(
                         f"✅ Saved batch {batch_id:04d}: {batch_size_actual:,} samples → {progress['total_extracted']:,} total"
@@ -160,7 +160,7 @@ def extract_batches(
             progress["completed_batches"].append(batch_id)
             progress["total_extracted"] += batch_size_actual
             progress["last_batch_id"] = batch_id
-            save_progress(progress)
+            save_progress(progress, output_dir)
             print(
                 f"✅ Saved final batch {batch_id:04d}: {batch_size_actual:,} samples → {progress['total_extracted']:,} total"
             )
