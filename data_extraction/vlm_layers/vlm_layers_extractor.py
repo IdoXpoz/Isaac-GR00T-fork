@@ -25,6 +25,8 @@ def extract_single_step_data(policy, step_data, dataset_info):
         # Extract action head output
         action = policy.get_action(step_data)
         action_right_arm = action["action.right_arm"]
+        # turn action_right_arm to 1d array
+        action_right_arm = action_right_arm.reshape(-1)
 
         # Create the data in user's specified format
         data_dict = {
