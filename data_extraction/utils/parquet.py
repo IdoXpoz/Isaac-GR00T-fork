@@ -1,3 +1,6 @@
+import os
+
+
 def inspect_parquet_file(parquet_file_path):
     """Inspect the structure of a parquet file by loading it and printing columns and sample data"""
 
