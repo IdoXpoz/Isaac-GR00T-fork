@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 from datetime import datetime
 from data_extraction.utils.progress import load_progress, save_progress
-from data_extraction.vlm_layers.vlm_layers_extractor import extract_single_step_data
+from data_extraction.vlm_layers_and_actions.vlm_layers_and_actions_extractor import extract_single_step_data
 from gr00t.model.policy import Gr00tPolicy
 from gr00t.data.dataset import LeRobotSingleDataset
 from gr00t.experiment.data_config import DATA_CONFIG_MAP
