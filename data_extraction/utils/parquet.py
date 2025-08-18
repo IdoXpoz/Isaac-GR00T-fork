@@ -33,17 +33,7 @@ def inspect_parquet_file(parquet_file_path):
             first_row = df.iloc[0]
             for col in df.columns:
                 val = first_row[col]
-                if pd.isna(val):
-                    print(f"   {col}: NaN")
-                elif isinstance(val, list):
-                    print(f"   {col}: list with {len(val)} elements")
-                elif isinstance(val, str):
-                    if len(val) > 100:
-                        print(f"   {col}: string (truncated): '{val[:100]}...'")
-                    else:
-                        print(f"   {col}: string: '{val}'")
-                else:
-                    print(f"   {col}: {type(val).__name__} = {val}")
+                print(f"   {col}: {val}")
 
     except Exception as e:
         print(f"❌ Error reading parquet file: {e}")
