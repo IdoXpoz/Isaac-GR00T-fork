@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 
 
 def inspect_parquet_file(parquet_file_path):
