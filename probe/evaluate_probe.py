@@ -214,14 +214,12 @@ def print_evaluation_summary(metrics: Dict[str, float]):
     print("\n" + "=" * 60)
 
 
-def _configure_paths(
-    feature_col_name: str, action_step: int, data_path: str, model_path: str
-) -> Tuple[str, str, str, str, str]:
+def _configure_paths(feature_col_name: str, action_step: int, data_path: str) -> Tuple[str, str, str, str, str]:
     """Return output dir, model path, data path, history path, feature col name label."""
     output_base_dir = "/content/drive/MyDrive/probes"
     probe_output_dir = os.path.join(output_base_dir, feature_col_name, f"action_step_{action_step}")
-    model_path_final = model_path
-    data_path_final = data_path
+    model_path_final = os.path.join(probe_output_dir, "best_probe_model.pth")
+    data_path_final = data_path or "/content/drive/MyDrive/probes/probe_training_data_60k_processed.parquet"
     history_path = os.path.join(probe_output_dir, "training_history.pkl")
     return probe_output_dir, model_path_final, data_path_final, history_path, feature_col_name
 
@@ -343,12 +341,10 @@ def _save_metrics_pickle(metrics: Dict[str, float], output_dir: str) -> str:
     return evaluation_metrics_path
 
 
-def evaluate_single_probe(
-    feature_col_name: str = "mean_pooled_layer_1", action_step: int = 0, data_path: str = None, model_path: str = None
-):
+def evaluate_single_probe(feature_col_name: str = "mean_pooled_layer_1", action_step: int = 0, data_path: str = None):
     # Setup
     probe_output_dir, MODEL_PATH, DATA_PATH, HISTORY_PATH, FEATURE_COL_NAME = _configure_paths(
-        feature_col_name, action_step, data_path, model_path
+        feature_col_name, action_step, data_path
     )
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {DEVICE}")
