@@ -274,7 +274,6 @@ def load_probe_data(
     for idx, row in tqdm(df.iterrows(), total=len(df), desc="Loading data"):
         # Process backbone features
         if row[feature_col_name] is not None:
-            # Features are already processed as [2048] vectors
             feature_array = np.array(row[feature_col_name])
             backbone_tensor = torch.tensor(feature_array, dtype=torch.float32)
 
@@ -352,8 +351,7 @@ def _create_or_load_split_indices(
 ) -> Tuple[List[int], List[int]]:
     """Create or load deterministic split indices shared across feature types.
 
-    - Reads the processed parquet to detect rows valid for BOTH feature types
-      (mean_pooled and last_vector) and with a target.
+    - Assumes all 60k features are valid
     - Persists a single split file one level above the feature-type directory
       so all feature types reuse the same split.
     """
@@ -367,16 +365,12 @@ def _create_or_load_split_indices(
         print(f"Loaded existing split indices from: {split_path}")
         return train_indices, test_indices
 
-    # Load DataFrame and compute validity across both feature types
+    # Load DataFrame - assume all features are valid
     df = pd.read_parquet(data_path)
-    target_col = "action_right_arm"
 
-    valid_indices = [
-        int(i)
-        for i, row in df.iterrows()
-        if (row[target_col] is not None) and all(row[c] is not None for c in feature_cols)
-    ]
-    print(f"Found {len(valid_indices)} valid samples (targets + both features) for splitting")
+    # Use all available indices (assuming all 60k features are valid)
+    valid_indices = list(range(len(df)))
+    print(f"Using all {len(valid_indices)} samples for splitting (assuming all features are valid)")
 
     # Deterministic shuffle
     rng = random.Random(seed)
