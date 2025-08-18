@@ -248,7 +248,7 @@ class ProbeTrainer:
 
 
 def load_probe_data(
-    data_path: str, feature_col_name: str = "mean_pooled_layer_1"
+    data_path: str, feature_col_name: str = "mean_pooled_layer_1", action_step: int = 0
 ) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
     """
     Load probe training data from processed parquet file.
@@ -288,8 +288,9 @@ def load_probe_data(
 
         # Process action targets
         if row["action_right_arm"] is not None:
-            action_tensor = torch.tensor(row["action_right_arm"], dtype=torch.float32)
-            action_targets.append(action_tensor)
+            actions_tensor = torch.tensor(row["action_right_arm"], dtype=torch.float32)
+            action_step_tensor = actions_tensor[action_step * 16 : action_step * 16 + 7]
+            action_targets.append(action_step_tensor)
         else:
             action_targets.append(None)
 
@@ -389,7 +390,11 @@ def _create_or_load_split_indices(
 
 
 def main(
-    feature_col_name: str = "mean_pooled_layer_1", data_path: str = None, batch_size: int = 32, num_epochs: int = 100
+    feature_col_name: str = "mean_pooled_layer_1",
+    data_path: str = None,
+    batch_size: int = 32,
+    num_epochs: int = 100,
+    action_step: int = 0,
 ):
     """Main training function.
 
@@ -414,10 +419,11 @@ def main(
 
     print(f"Using device: {DEVICE}")
     print(f"Feature col name: {feature_col_name}")
+    print(f"Action step: {action_step}")
 
     # Set up output directory - save to mounted drive
     output_base_dir = "/content/drive/MyDrive/probes"
-    probe_output_dir = os.path.join(output_base_dir, feature_col_name)
+    probe_output_dir = os.path.join(output_base_dir, feature_col_name, f"action_step_{action_step}")
     os.makedirs(probe_output_dir, exist_ok=True)
     print(f"📁 Saving outputs to: {probe_output_dir}")
 
@@ -430,7 +436,9 @@ def main(
         )
         return
 
-    backbone_features, action_targets = load_probe_data(DATA_PATH, feature_col_name=feature_col_name)
+    backbone_features, action_targets = load_probe_data(
+        DATA_PATH, feature_col_name=feature_col_name, action_step=action_step
+    )
 
     # Create/load deterministic split indices and build splits
     train_indices, test_indices = _create_or_load_split_indices(probe_output_dir, DATA_PATH, train_ratio=0.98, seed=42)
