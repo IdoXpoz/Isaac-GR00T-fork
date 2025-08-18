@@ -429,7 +429,6 @@ def evaluate_all_probes_for_single_action_step(
                     feature_col_name=feature_col_name,
                     action_step=action_step,
                     data_path=data_path,
-                    model_path=None,
                 )
             except Exception as e:
                 print(f"❌ Error evaluating {feature_col_name}: {str(e)}")
