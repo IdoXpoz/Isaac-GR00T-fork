@@ -389,14 +389,14 @@ def _create_or_load_split_indices(
     return train_indices, test_indices
 
 
-def main(
+def train_single_probe(
+    data_path: str,
     feature_col_name: str = "mean_pooled_layer_1",
-    data_path: str = None,
     batch_size: int = 32,
     num_epochs: int = 100,
     action_step: int = 0,
 ):
-    """Main training function.
+    """train_single_probe training function.
 
     Args:
         feature_col_name: Name of the feature column to use
@@ -409,12 +409,6 @@ def main(
     np.random.seed(42)
     torch.manual_seed(42)
 
-    # Configuration
-    DATA_PATH = (
-        data_path or "/content/drive/MyDrive/probe_training_data/probe_training_data_60k_processed.parquet"
-    )  # Use processed data
-    BATCH_SIZE = batch_size
-    NUM_EPOCHS = num_epochs
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     print(f"Using device: {DEVICE}")
@@ -428,8 +422,8 @@ def main(
     print(f"📁 Saving outputs to: {probe_output_dir}")
 
     # Load data
-    if not os.path.exists(DATA_PATH):
-        print(f"❌ Data file not found: {DATA_PATH}")
+    if not os.path.exists(data_path):
+        print(f"❌ Data file not found: {data_path}")
         print("Please make sure you've run the data extraction and processing notebook first.")
         print(
             "The processed file should contain 'backbone_features_mean_pooled' and 'backbone_features_last_vector' columns."
@@ -437,11 +431,11 @@ def main(
         return
 
     backbone_features, action_targets = load_probe_data(
-        DATA_PATH, feature_col_name=feature_col_name, action_step=action_step
+        data_path, feature_col_name=feature_col_name, action_step=action_step
     )
 
     # Create/load deterministic split indices and build splits
-    train_indices, test_indices = _create_or_load_split_indices(probe_output_dir, DATA_PATH, train_ratio=0.98, seed=42)
+    train_indices, test_indices = _create_or_load_split_indices(probe_output_dir, data_path, train_ratio=0.98, seed=42)
     train_features = [backbone_features[i] for i in train_indices]
     train_targets = [action_targets[i] for i in train_indices]
     test_features = [backbone_features[i] for i in test_indices]
@@ -452,8 +446,8 @@ def main(
     test_dataset = ProbeDataset(test_features, test_targets)
 
     # Create data loaders
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # Get dimensions from sample data
     sample_features, sample_target = train_dataset[0]
@@ -479,7 +473,7 @@ def main(
     history = trainer.train(
         train_loader=train_loader,
         val_loader=test_loader,  # Using test as validation
-        num_epochs=NUM_EPOCHS,
+        num_epochs=num_epochs,
         output_dir=probe_output_dir,
         early_stopping_patience=15,
     )
@@ -502,5 +496,19 @@ def main(
     print(f"📁 All outputs saved in: {probe_output_dir}")
 
 
-if __name__ == "__main__":
-    main()
+def train_all_probes_for_single_action_step(
+    data_path: str = "/content/drive/MyDrive/probes/probe_training_data_60k_processed.parquet",
+    action_step: int = 0,
+):
+    """train_all_probes training function.
+
+    Args:
+        data_path: Path to the processed data file
+    """
+    for layer in range(0, 5):
+        for pooling in ["mean_pooled", "last_vector"]:
+            train_single_probe(
+                data_path=data_path,
+                feature_col_name=f"{pooling}_layer_{layer}",
+                action_step=action_step,
+            )
