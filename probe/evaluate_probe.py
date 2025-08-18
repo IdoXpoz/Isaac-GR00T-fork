@@ -214,15 +214,14 @@ def print_evaluation_summary(metrics: Dict[str, float]):
     print("\n" + "=" * 60)
 
 
-def _configure_paths(feature_type: str, data_path: str, model_path: str) -> Tuple[str, str, str, str, str]:
-    """Return output dir, model path, data path, history path, feature type label."""
-    probe_output_dir = f"/content/drive/MyDrive/probes/{feature_type}"
-    model_path_final = model_path or os.path.join(probe_output_dir, "best_probe_model.pth")
-    data_path_final = (
-        data_path or "/content/drive/MyDrive/probe_training_data/probe_training_data_60k_processed.parquet"
-    )
+def _configure_paths(feature_col_name: str, action_step: int, data_path: str) -> Tuple[str, str, str, str, str]:
+    """Return output dir, model path, data path, history path, feature col name label."""
+    output_base_dir = "/content/drive/MyDrive/probes"
+    probe_output_dir = os.path.join(output_base_dir, feature_col_name, f"action_step_{action_step}")
+    model_path_final = os.path.join(probe_output_dir, "best_probe_model.pth")
+    data_path_final = data_path or "/content/drive/MyDrive/probes/probe_training_data_60k_processed.parquet"
     history_path = os.path.join(probe_output_dir, "training_history.pkl")
-    return probe_output_dir, model_path_final, data_path_final, history_path, feature_type
+    return probe_output_dir, model_path_final, data_path_final, history_path, feature_col_name
 
 
 def _create_output_directory_if_missing(path: str) -> None:
@@ -244,7 +243,8 @@ def _validate_required_files(model_path: str, data_path: str) -> bool:
 
 def _load_split_indices() -> Tuple[List[int], List[int]]:
     """Load split indices from a shared, hardcoded location."""
-    split_path = "/content/drive/MyDrive/probes/split_indices.json"
+    output_base_dir = "/content/drive/MyDrive/probes"
+    split_path = os.path.join(output_base_dir, "split_indices.json")
     if not os.path.exists(split_path):
         raise FileNotFoundError(
             f"Split indices not found at {split_path}. Run training first to create a deterministic split."
@@ -254,9 +254,13 @@ def _load_split_indices() -> Tuple[List[int], List[int]]:
     return data.get("train_indices", []), data.get("test_indices", [])
 
 
-def _build_test_loader(data_path: str, feature_type: str) -> Tuple[DataLoader, ProbeDataset, List[int]]:
+def _build_test_loader(
+    data_path: str, feature_col_name: str, action_step: int
+) -> Tuple[DataLoader, ProbeDataset, List[int]]:
     """Build test loader using persisted test indices; returns aligned original indices."""
-    backbone_features, action_targets = load_probe_data(data_path, feature_type=feature_type)
+    backbone_features, action_targets = load_probe_data(
+        data_path, feature_col_name=feature_col_name, action_step=action_step
+    )
     _, test_indices = _load_split_indices()
 
     test_features = [backbone_features[i] for i in test_indices]
@@ -337,15 +341,15 @@ def _save_metrics_pickle(metrics: Dict[str, float], output_dir: str) -> str:
     return evaluation_metrics_path
 
 
-def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: str = None):
-    """Main evaluation function orchestrating the full probe evaluation pipeline."""
+def evaluate_single_probe(feature_col_name: str = "mean_pooled_layer_1", action_step: int = 0, data_path: str = None):
     # Setup
-    probe_output_dir, MODEL_PATH, DATA_PATH, HISTORY_PATH, FEATURE_TYPE = _configure_paths(
-        feature_type, data_path, model_path
+    probe_output_dir, MODEL_PATH, DATA_PATH, HISTORY_PATH, FEATURE_COL_NAME = _configure_paths(
+        feature_col_name, action_step, data_path
     )
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {DEVICE}")
-    print(f"Feature type: {FEATURE_TYPE}")
+    print(f"Feature col name: {FEATURE_COL_NAME}")
+    print(f"Action step: {action_step}")
 
     # Deterministic seeding for reproducible splits and predictions
     random.seed(42)
@@ -359,7 +363,7 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
         return
 
     # Data
-    test_loader, test_dataset, valid_test_indices = _build_test_loader(DATA_PATH, FEATURE_TYPE)
+    test_loader, test_dataset, valid_test_indices = _build_test_loader(DATA_PATH, FEATURE_COL_NAME, action_step)
     input_dim, output_dim = _infer_input_output_dims(test_dataset)
     print(f"Input dimension: {input_dim}")
     print(f"Output dimension: {output_dim}")
@@ -396,9 +400,198 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
     print(f"📊 Predictions plot saved to: {predictions_path}")
     print(f"🧾 First 100 predictions saved to: {predictions_csv_path}")
     print(f"📁 All evaluation outputs in: {probe_output_dir}")
-    print(f"Feature type used: {FEATURE_TYPE}")
+    print(f"Feature col name used: {FEATURE_COL_NAME}")
+    print(f"Action step used: {action_step}")
     print("🎉 Evaluation completed!")
 
 
-if __name__ == "__main__":
-    main()
+def evaluate_all_probes_for_single_action_step(
+    data_path: str = "/content/drive/MyDrive/probes/probe_training_data_60k_processed.parquet",
+    action_step: int = 0,
+):
+    """Evaluate all probes for a single action step.
+
+    Args:
+        data_path: Path to the processed data file
+        action_step: Which action step to evaluate (0-based)
+    """
+    print(f"\n🔍 Evaluating all probes for action step {action_step}")
+    print("=" * 60)
+
+    for layer in range(0, 5):
+        for pooling in ["mean_pooled", "last_vector"]:
+            feature_col_name = f"{pooling}_layer_{layer}"
+            print(f"\n📊 Evaluating {feature_col_name} for action step {action_step}")
+            print("-" * 40)
+
+            try:
+                evaluate_single_probe(
+                    feature_col_name=feature_col_name,
+                    action_step=action_step,
+                    data_path=data_path,
+                )
+            except Exception as e:
+                print(f"❌ Error evaluating {feature_col_name}: {str(e)}")
+                continue
+
+    print(f"\n🎉 Completed evaluation of all probes for action step {action_step}")
+
+
+def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = True) -> Dict[str, Dict[str, float]]:
+    """Create a comparison graph of MSE and mean correlation for all probes for a single action step.
+
+    Args:
+        action_step: Which action step to compare (0-based)
+        output_dir: Directory to save the comparison plot. If None, uses default location.
+        show_plot: Whether to display the plot
+
+    Returns:
+        Dictionary containing metrics for all probes
+    """
+    print(f"\n📊 Comparing all probes for action step {action_step}")
+    print("=" * 60)
+
+    # Define all probe configurations
+    layers = list(range(0, 5))
+    pooling_methods = ["mean_pooled", "last_vector"]
+
+    # Storage for metrics
+    probe_names = []
+    mse_values = []
+    correlation_values = []
+    missing_probes = []
+
+    # Load metrics for each probe
+    output_base_dir = "/content/drive/MyDrive/probes"
+
+    for pooling in pooling_methods:
+        for layer in layers:
+            feature_col_name = f"{pooling}_layer_{layer}"
+            probe_output_dir = os.path.join(output_base_dir, feature_col_name, f"action_step_{action_step}")
+            metrics_path = os.path.join(probe_output_dir, "evaluation_metrics.pkl")
+
+            if os.path.exists(metrics_path):
+                try:
+                    with open(metrics_path, "rb") as f:
+                        metrics = pickle.load(f)
+
+                    probe_names.append(feature_col_name)
+                    mse_values.append(metrics["mse"])
+
+                    # Calculate mean correlation
+                    correlations = metrics["correlations"]
+                    if isinstance(correlations, list):
+                        mean_corr = np.mean([c for c in correlations if not np.isnan(c)])
+                    else:
+                        mean_corr = correlations if not np.isnan(correlations) else 0.0
+                    correlation_values.append(mean_corr)
+
+                    print(f"✅ Loaded {feature_col_name}: MSE={metrics['mse']:.6f}, Mean Corr={mean_corr:.4f}")
+
+                except Exception as e:
+                    print(f"❌ Error loading {feature_col_name}: {str(e)}")
+                    missing_probes.append(feature_col_name)
+            else:
+                print(f"⚠️  Missing metrics for {feature_col_name}")
+                missing_probes.append(feature_col_name)
+
+    if not probe_names:
+        print("❌ No probe metrics found. Make sure to run evaluation first.")
+        return {}
+
+    # Create comparison plot
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+    # Colors for different pooling methods
+    colors = []
+    for name in probe_names:
+        if "mean_pooled" in name:
+            colors.append("steelblue")
+        else:
+            colors.append("darkorange")
+
+    # MSE comparison
+    bars1 = ax1.bar(range(len(probe_names)), mse_values, color=colors, alpha=0.7)
+    ax1.set_xlabel("Probe Configuration")
+    ax1.set_ylabel("MSE (Lower is Better)")
+    ax1.set_title(f"MSE Comparison - Action Step {action_step}")
+    ax1.set_xticks(range(len(probe_names)))
+    ax1.set_xticklabels(probe_names, rotation=45, ha="right")
+    ax1.grid(True, alpha=0.3)
+
+    # Add value labels on bars
+    for i, (bar, value) in enumerate(zip(bars1, mse_values)):
+        ax1.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(mse_values) * 0.01,
+            f"{value:.4f}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+
+    # Correlation comparison
+    bars2 = ax2.bar(range(len(probe_names)), correlation_values, color=colors, alpha=0.7)
+    ax2.set_xlabel("Probe Configuration")
+    ax2.set_ylabel("Mean Correlation (Higher is Better)")
+    ax2.set_title(f"Mean Correlation Comparison - Action Step {action_step}")
+    ax2.set_xticks(range(len(probe_names)))
+    ax2.set_xticklabels(probe_names, rotation=45, ha="right")
+    ax2.grid(True, alpha=0.3)
+
+    # Add value labels on bars
+    for i, (bar, value) in enumerate(zip(bars2, correlation_values)):
+        ax2.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(correlation_values) * 0.01,
+            f"{value:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+
+    # Add legend
+    from matplotlib.patches import Patch
+
+    legend_elements = [
+        Patch(facecolor="steelblue", alpha=0.7, label="Mean Pooled"),
+        Patch(facecolor="darkorange", alpha=0.7, label="Last Vector"),
+    ]
+    fig.legend(handles=legend_elements, loc="upper center", bbox_to_anchor=(0.5, 0.95), ncol=2)
+
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)
+
+    output_dir = os.path.join(output_base_dir, "comparisons")
+    os.makedirs(output_dir, exist_ok=True)
+
+    plot_path = os.path.join(output_dir, f"probe_comparison_action_step_{action_step}.png")
+    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+
+    if show_plot:
+        plt.show()
+
+    # Print summary
+    print(f"\n📈 Best performing probes for action step {action_step}:")
+
+    # Find best MSE (lowest)
+    if mse_values:
+        best_mse_idx = np.argmin(mse_values)
+        print(f"  🏆 Lowest MSE: {probe_names[best_mse_idx]} ({mse_values[best_mse_idx]:.6f})")
+
+    # Find best correlation (highest)
+    if correlation_values:
+        best_corr_idx = np.argmax(correlation_values)
+        print(f"  🏆 Highest Correlation: {probe_names[best_corr_idx]} ({correlation_values[best_corr_idx]:.4f})")
+
+    if missing_probes:
+        print(f"\n⚠️  Missing evaluations for: {', '.join(missing_probes)}")
+
+    print(f"\n💾 Comparison plot saved to: {plot_path}")
+
+    # Return organized results
+    results = {}
+    for i, name in enumerate(probe_names):
+        results[name] = {"mse": mse_values[i], "mean_correlation": correlation_values[i]}
+
+    return results
