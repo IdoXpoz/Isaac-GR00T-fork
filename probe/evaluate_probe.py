@@ -214,15 +214,16 @@ def print_evaluation_summary(metrics: Dict[str, float]):
     print("\n" + "=" * 60)
 
 
-def _configure_paths(feature_type: str, data_path: str, model_path: str) -> Tuple[str, str, str, str, str]:
-    """Return output dir, model path, data path, history path, feature type label."""
-    probe_output_dir = f"/content/drive/MyDrive/probes/{feature_type}"
-    model_path_final = model_path or os.path.join(probe_output_dir, "best_probe_model.pth")
-    data_path_final = (
-        data_path or "/content/drive/MyDrive/probe_training_data/probe_training_data_60k_processed.parquet"
-    )
+def _configure_paths(
+    feature_col_name: str, action_step: int, data_path: str, model_path: str
+) -> Tuple[str, str, str, str, str]:
+    """Return output dir, model path, data path, history path, feature col name label."""
+    output_base_dir = "/content/drive/MyDrive/probes"
+    probe_output_dir = os.path.join(output_base_dir, feature_col_name, f"action_step_{action_step}")
+    model_path_final = model_path
+    data_path_final = data_path
     history_path = os.path.join(probe_output_dir, "training_history.pkl")
-    return probe_output_dir, model_path_final, data_path_final, history_path, feature_type
+    return probe_output_dir, model_path_final, data_path_final, history_path, feature_col_name
 
 
 def _create_output_directory_if_missing(path: str) -> None:
@@ -244,7 +245,8 @@ def _validate_required_files(model_path: str, data_path: str) -> bool:
 
 def _load_split_indices() -> Tuple[List[int], List[int]]:
     """Load split indices from a shared, hardcoded location."""
-    split_path = "/content/drive/MyDrive/probes/split_indices.json"
+    output_base_dir = "/content/drive/MyDrive/probes"
+    split_path = os.path.join(output_base_dir, "split_indices.json")
     if not os.path.exists(split_path):
         raise FileNotFoundError(
             f"Split indices not found at {split_path}. Run training first to create a deterministic split."
@@ -254,9 +256,13 @@ def _load_split_indices() -> Tuple[List[int], List[int]]:
     return data.get("train_indices", []), data.get("test_indices", [])
 
 
-def _build_test_loader(data_path: str, feature_type: str) -> Tuple[DataLoader, ProbeDataset, List[int]]:
+def _build_test_loader(
+    data_path: str, feature_col_name: str, action_step: int
+) -> Tuple[DataLoader, ProbeDataset, List[int]]:
     """Build test loader using persisted test indices; returns aligned original indices."""
-    backbone_features, action_targets = load_probe_data(data_path, feature_type=feature_type)
+    backbone_features, action_targets = load_probe_data(
+        data_path, feature_col_name=feature_col_name, action_step=action_step
+    )
     _, test_indices = _load_split_indices()
 
     test_features = [backbone_features[i] for i in test_indices]
@@ -337,15 +343,17 @@ def _save_metrics_pickle(metrics: Dict[str, float], output_dir: str) -> str:
     return evaluation_metrics_path
 
 
-def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: str = None):
-    """Main evaluation function orchestrating the full probe evaluation pipeline."""
+def evaluate_single_probe(
+    feature_col_name: str = "mean_pooled_layer_1", action_step: int = 0, data_path: str = None, model_path: str = None
+):
     # Setup
-    probe_output_dir, MODEL_PATH, DATA_PATH, HISTORY_PATH, FEATURE_TYPE = _configure_paths(
-        feature_type, data_path, model_path
+    probe_output_dir, MODEL_PATH, DATA_PATH, HISTORY_PATH, FEATURE_COL_NAME = _configure_paths(
+        feature_col_name, action_step, data_path, model_path
     )
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {DEVICE}")
-    print(f"Feature type: {FEATURE_TYPE}")
+    print(f"Feature col name: {FEATURE_COL_NAME}")
+    print(f"Action step: {action_step}")
 
     # Deterministic seeding for reproducible splits and predictions
     random.seed(42)
@@ -359,7 +367,7 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
         return
 
     # Data
-    test_loader, test_dataset, valid_test_indices = _build_test_loader(DATA_PATH, FEATURE_TYPE)
+    test_loader, test_dataset, valid_test_indices = _build_test_loader(DATA_PATH, FEATURE_COL_NAME, action_step)
     input_dim, output_dim = _infer_input_output_dims(test_dataset)
     print(f"Input dimension: {input_dim}")
     print(f"Output dimension: {output_dim}")
@@ -396,9 +404,39 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, model_path: s
     print(f"📊 Predictions plot saved to: {predictions_path}")
     print(f"🧾 First 100 predictions saved to: {predictions_csv_path}")
     print(f"📁 All evaluation outputs in: {probe_output_dir}")
-    print(f"Feature type used: {FEATURE_TYPE}")
+    print(f"Feature col name used: {FEATURE_COL_NAME}")
+    print(f"Action step used: {action_step}")
     print("🎉 Evaluation completed!")
 
 
-if __name__ == "__main__":
-    main()
+def evaluate_all_probes_for_single_action_step(
+    data_path: str = "/content/drive/MyDrive/probes/probe_training_data_60k_processed.parquet",
+    action_step: int = 0,
+):
+    """Evaluate all probes for a single action step.
+
+    Args:
+        data_path: Path to the processed data file
+        action_step: Which action step to evaluate (0-based)
+    """
+    print(f"\n🔍 Evaluating all probes for action step {action_step}")
+    print("=" * 60)
+
+    for layer in range(0, 5):
+        for pooling in ["mean_pooled", "last_vector"]:
+            feature_col_name = f"{pooling}_layer_{layer}"
+            print(f"\n📊 Evaluating {feature_col_name} for action step {action_step}")
+            print("-" * 40)
+
+            try:
+                evaluate_single_probe(
+                    feature_col_name=feature_col_name,
+                    action_step=action_step,
+                    data_path=data_path,
+                    model_path=None,
+                )
+            except Exception as e:
+                print(f"❌ Error evaluating {feature_col_name}: {str(e)}")
+                continue
+
+    print(f"\n🎉 Completed evaluation of all probes for action step {action_step}")
