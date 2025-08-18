@@ -345,7 +345,7 @@ def split_data(
 
 
 def _create_or_load_split_indices(
-    output_dir: str,
+    output_base_dir: str,
     data_path: str,
     train_ratio: float = 0.98,
     seed: int = 42,
@@ -356,8 +356,7 @@ def _create_or_load_split_indices(
     - Persists a single split file one level above the feature-type directory
       so all feature types reuse the same split.
     """
-    base_dir = os.path.dirname(output_dir)
-    split_path = os.path.join(base_dir, "split_indices.json")
+    split_path = os.path.join(output_base_dir, "split_indices.json")
     if os.path.exists(split_path):
         with open(split_path, "r") as f:
             data = json.load(f)
@@ -435,7 +434,7 @@ def train_single_probe(
     )
 
     # Create/load deterministic split indices and build splits
-    train_indices, test_indices = _create_or_load_split_indices(probe_output_dir, data_path, train_ratio=0.98, seed=42)
+    train_indices, test_indices = _create_or_load_split_indices(output_base_dir, data_path, train_ratio=0.98, seed=42)
     train_features = [backbone_features[i] for i in train_indices]
     train_targets = [action_targets[i] for i in train_indices]
     test_features = [backbone_features[i] for i in test_indices]
