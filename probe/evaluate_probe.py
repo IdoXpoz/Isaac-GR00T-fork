@@ -435,3 +435,163 @@ def evaluate_all_probes_for_single_action_step(
                 continue
 
     print(f"\n🎉 Completed evaluation of all probes for action step {action_step}")
+
+
+def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = True) -> Dict[str, Dict[str, float]]:
+    """Create a comparison graph of MSE and mean correlation for all probes for a single action step.
+
+    Args:
+        action_step: Which action step to compare (0-based)
+        output_dir: Directory to save the comparison plot. If None, uses default location.
+        show_plot: Whether to display the plot
+
+    Returns:
+        Dictionary containing metrics for all probes
+    """
+    print(f"\n📊 Comparing all probes for action step {action_step}")
+    print("=" * 60)
+
+    # Define all probe configurations
+    layers = list(range(0, 5))
+    pooling_methods = ["mean_pooled", "last_vector"]
+
+    # Storage for metrics
+    probe_names = []
+    mse_values = []
+    correlation_values = []
+    missing_probes = []
+
+    # Load metrics for each probe
+    output_base_dir = "/content/drive/MyDrive/probes"
+
+    for pooling in pooling_methods:
+        for layer in layers:
+            feature_col_name = f"{pooling}_layer_{layer}"
+            probe_output_dir = os.path.join(output_base_dir, feature_col_name, f"action_step_{action_step}")
+            metrics_path = os.path.join(probe_output_dir, "evaluation_metrics.pkl")
+
+            if os.path.exists(metrics_path):
+                try:
+                    with open(metrics_path, "rb") as f:
+                        metrics = pickle.load(f)
+
+                    probe_names.append(feature_col_name)
+                    mse_values.append(metrics["mse"])
+
+                    # Calculate mean correlation
+                    correlations = metrics["correlations"]
+                    if isinstance(correlations, list):
+                        mean_corr = np.mean([c for c in correlations if not np.isnan(c)])
+                    else:
+                        mean_corr = correlations if not np.isnan(correlations) else 0.0
+                    correlation_values.append(mean_corr)
+
+                    print(f"✅ Loaded {feature_col_name}: MSE={metrics['mse']:.6f}, Mean Corr={mean_corr:.4f}")
+
+                except Exception as e:
+                    print(f"❌ Error loading {feature_col_name}: {str(e)}")
+                    missing_probes.append(feature_col_name)
+            else:
+                print(f"⚠️  Missing metrics for {feature_col_name}")
+                missing_probes.append(feature_col_name)
+
+    if not probe_names:
+        print("❌ No probe metrics found. Make sure to run evaluation first.")
+        return {}
+
+    # Create comparison plot
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+    # Colors for different pooling methods
+    colors = []
+    for name in probe_names:
+        if "mean_pooled" in name:
+            colors.append("steelblue")
+        else:
+            colors.append("darkorange")
+
+    # MSE comparison
+    bars1 = ax1.bar(range(len(probe_names)), mse_values, color=colors, alpha=0.7)
+    ax1.set_xlabel("Probe Configuration")
+    ax1.set_ylabel("MSE (Lower is Better)")
+    ax1.set_title(f"MSE Comparison - Action Step {action_step}")
+    ax1.set_xticks(range(len(probe_names)))
+    ax1.set_xticklabels(probe_names, rotation=45, ha="right")
+    ax1.grid(True, alpha=0.3)
+
+    # Add value labels on bars
+    for i, (bar, value) in enumerate(zip(bars1, mse_values)):
+        ax1.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(mse_values) * 0.01,
+            f"{value:.4f}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+
+    # Correlation comparison
+    bars2 = ax2.bar(range(len(probe_names)), correlation_values, color=colors, alpha=0.7)
+    ax2.set_xlabel("Probe Configuration")
+    ax2.set_ylabel("Mean Correlation (Higher is Better)")
+    ax2.set_title(f"Mean Correlation Comparison - Action Step {action_step}")
+    ax2.set_xticks(range(len(probe_names)))
+    ax2.set_xticklabels(probe_names, rotation=45, ha="right")
+    ax2.grid(True, alpha=0.3)
+
+    # Add value labels on bars
+    for i, (bar, value) in enumerate(zip(bars2, correlation_values)):
+        ax2.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(correlation_values) * 0.01,
+            f"{value:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+
+    # Add legend
+    from matplotlib.patches import Patch
+
+    legend_elements = [
+        Patch(facecolor="steelblue", alpha=0.7, label="Mean Pooled"),
+        Patch(facecolor="darkorange", alpha=0.7, label="Last Vector"),
+    ]
+    fig.legend(handles=legend_elements, loc="upper center", bbox_to_anchor=(0.5, 0.95), ncol=2)
+
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)
+
+    output_dir = os.path.join(output_base_dir, "comparisons")
+    os.makedirs(output_dir, exist_ok=True)
+
+    plot_path = os.path.join(output_dir, f"probe_comparison_action_step_{action_step}.png")
+    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+
+    if show_plot:
+        plt.show()
+
+    # Print summary
+    print(f"\n📈 Best performing probes for action step {action_step}:")
+
+    # Find best MSE (lowest)
+    if mse_values:
+        best_mse_idx = np.argmin(mse_values)
+        print(f"  🏆 Lowest MSE: {probe_names[best_mse_idx]} ({mse_values[best_mse_idx]:.6f})")
+
+    # Find best correlation (highest)
+    if correlation_values:
+        best_corr_idx = np.argmax(correlation_values)
+        print(f"  🏆 Highest Correlation: {probe_names[best_corr_idx]} ({correlation_values[best_corr_idx]:.4f})")
+
+    if missing_probes:
+        print(f"\n⚠️  Missing evaluations for: {', '.join(missing_probes)}")
+
+    print(f"\n💾 Comparison plot saved to: {plot_path}")
+
+    # Return organized results
+    results = {}
+    for i, name in enumerate(probe_names):
+        results[name] = {"mse": mse_values[i], "mean_correlation": correlation_values[i]}
+
+    return results
