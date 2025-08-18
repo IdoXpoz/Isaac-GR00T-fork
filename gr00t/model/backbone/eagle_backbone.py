@@ -142,7 +142,7 @@ class EagleBackbone(nn.Module):
 
         eagle_output = self.eagle_model(**eagle_input, output_hidden_states=True, return_dict=True)
         print("taking eagle output from layers", selected_layers)
-        eagle_features_per_layer = eagle_output.hidden_states[selected_layers]
+        eagle_features_per_layer = [eagle_output.hidden_states[layer] for layer in selected_layers]
 
         # Log VLM output shape before linear projection
         print(f"🔍 VLM Raw Output shape (layers {selected_layers}): {eagle_features_per_layer[0].shape}")

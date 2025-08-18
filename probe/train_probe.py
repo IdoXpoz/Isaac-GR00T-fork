@@ -247,44 +247,35 @@ class ProbeTrainer:
         return history
 
 
-def load_probe_data(data_path: str, feature_type: str = "mean_pooled") -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
+def load_probe_data(
+    data_path: str, feature_col_name: str = "mean_pooled_layer_1"
+) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
     """
     Load probe training data from processed parquet file.
 
     Args:
         data_path: Path to the parquet file containing processed probe data
-        feature_type: Type of features to use - "mean_pooled" or "last_vector"
+        feature_col_name: Name of the feature column to use
 
     Returns:
         Tuple of (backbone_features, action_targets)
     """
     print(f"Loading data from {data_path}...")
-    print(f"Using feature type: {feature_type}")
+    print(f"Using feature type: {feature_col_name}")
 
     # Load parquet file
     df = pd.read_parquet(data_path)
     print(f"Loaded DataFrame with {len(df)} rows and columns: {list(df.columns)}")
 
-    # Determine which column to use for features
-    if feature_type == "mean_pooled":
-        feature_column = "backbone_features_mean_pooled"
-    elif feature_type == "last_vector":
-        feature_column = "backbone_features_last_vector"
-    else:
-        raise ValueError(f"Invalid feature_type: {feature_type}. Must be 'mean_pooled' or 'last_vector'")
-
-    if feature_column not in df.columns:
-        raise ValueError(f"Column '{feature_column}' not found in data. Available columns: {list(df.columns)}")
-
     backbone_features = []
     action_targets = []
 
-    print(f"Processing {feature_column} and action targets...")
+    print(f"Processing {feature_col_name} and action targets...")
     for idx, row in tqdm(df.iterrows(), total=len(df), desc="Loading data"):
         # Process backbone features
-        if row[feature_column] is not None:
+        if row[feature_col_name] is not None:
             # Features are already processed as [2048] vectors
-            feature_array = np.array(row[feature_column])
+            feature_array = np.array(row[feature_col_name])
             backbone_tensor = torch.tensor(feature_array, dtype=torch.float32)
 
             # Ensure shape is [2048]
@@ -297,8 +288,8 @@ def load_probe_data(data_path: str, feature_type: str = "mean_pooled") -> Tuple[
             backbone_features.append(None)
 
         # Process action targets
-        if row["action_right_arm_first"] is not None:
-            action_tensor = torch.tensor(row["action_right_arm_first"], dtype=torch.float32)
+        if row["action_right_arm"] is not None:
+            action_tensor = torch.tensor(row["action_right_arm"], dtype=torch.float32)
             action_targets.append(action_tensor)
         else:
             action_targets.append(None)
@@ -378,13 +369,7 @@ def _create_or_load_split_indices(
 
     # Load DataFrame and compute validity across both feature types
     df = pd.read_parquet(data_path)
-    feature_cols = ["backbone_features_mean_pooled", "backbone_features_last_vector"]
-    target_col = "action_right_arm_first"
-    missing_cols = [c for c in feature_cols + [target_col] if c not in df.columns]
-    if missing_cols:
-        raise ValueError(
-            f"Missing required columns for split computation: {missing_cols}. Available: {list(df.columns)}"
-        )
+    target_col = "action_right_arm"
 
     valid_indices = [
         int(i)
@@ -409,11 +394,13 @@ def _create_or_load_split_indices(
     return train_indices, test_indices
 
 
-def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: int = 32, num_epochs: int = 100):
+def main(
+    feature_col_name: str = "mean_pooled_layer_1", data_path: str = None, batch_size: int = 32, num_epochs: int = 100
+):
     """Main training function.
 
     Args:
-        feature_type: Type of features to use - "mean_pooled" or "last_vector"
+        feature_col_name: Name of the feature column to use
         data_path: Path to the processed data file (optional)
         batch_size: Batch size for training
         num_epochs: Number of training epochs
@@ -427,17 +414,16 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: i
     DATA_PATH = (
         data_path or "/content/drive/MyDrive/probe_training_data/probe_training_data_60k_processed.parquet"
     )  # Use processed data
-    FEATURE_TYPE = feature_type
     BATCH_SIZE = batch_size
     NUM_EPOCHS = num_epochs
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     print(f"Using device: {DEVICE}")
-    print(f"Feature type: {FEATURE_TYPE}")
+    print(f"Feature col name: {feature_col_name}")
 
     # Set up output directory - save to mounted drive
     output_base_dir = "/content/drive/MyDrive/probes"
-    probe_output_dir = os.path.join(output_base_dir, FEATURE_TYPE)
+    probe_output_dir = os.path.join(output_base_dir, feature_col_name)
     os.makedirs(probe_output_dir, exist_ok=True)
     print(f"📁 Saving outputs to: {probe_output_dir}")
 
@@ -450,7 +436,7 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: i
         )
         return
 
-    backbone_features, action_targets = load_probe_data(DATA_PATH, feature_type=FEATURE_TYPE)
+    backbone_features, action_targets = load_probe_data(DATA_PATH, feature_col_name=feature_col_name)
 
     # Create/load deterministic split indices and build splits
     train_indices, test_indices = _create_or_load_split_indices(probe_output_dir, DATA_PATH, train_ratio=0.98, seed=42)
@@ -510,7 +496,7 @@ def main(feature_type: str = "mean_pooled", data_path: str = None, batch_size: i
     model_path = os.path.join(probe_output_dir, "best_probe_model.pth")
     print(f"Model saved to: {model_path}")
     print(f"Training history saved to: {history_path}")
-    print(f"Feature type used: {FEATURE_TYPE}")
+    print(f"Feature col name used: {feature_col_name}")
     print(f"📁 All outputs saved in: {probe_output_dir}")
 
 

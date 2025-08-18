@@ -221,6 +221,7 @@ class Gr00tPolicy(BasePolicy):
     def get_VLM_selected_layers_output(
         self, observations: Dict[str, Any], selected_layers: list[int]
     ) -> Dict[str, Any]:
+        print(f"entered policy.get_VLM_selected_layers_output")
         # Handle batching the same way as get_action
         is_batch = self._check_state_is_batched(observations)
         if not is_batch:
@@ -235,15 +236,24 @@ class Gr00tPolicy(BasePolicy):
         normalized_input = self.apply_transforms(observations)
 
         # Extract backbone features using the model's new method
-        backbone_features_per_layer = self._get_VLM_selected_layers_output_from_normalized_input(normalized_input)
+        backbone_features_per_layer = self._get_VLM_selected_layers_output_from_normalized_input(
+            normalized_input, selected_layers
+        )
 
-        # Remove batch dimension if input wasn't batched
+        # Convert to mutable list and process each layer
+        processed_features = []
         for i in range(len(backbone_features_per_layer)):
-            if not is_batch:
-                backbone_features_per_layer[i] = squeeze_dict_values(backbone_features_per_layer[i])
-                backbone_features_per_layer[i]["selected_layer"] = selected_layers[i]
+            layer_features = backbone_features_per_layer[i]
 
-        return backbone_features_per_layer
+            # Remove batch dimension if input wasn't batched
+            if not is_batch:
+                layer_features = squeeze_dict_values(layer_features)
+
+            # Add selected layer information
+            layer_features["selected_layer"] = selected_layers[i]
+            processed_features.append(layer_features)
+
+        return processed_features
 
     def _get_action_from_normalized_input(self, normalized_input: Dict[str, Any]) -> torch.Tensor:
         # Set up autocast context if needed
@@ -271,6 +281,28 @@ class Gr00tPolicy(BasePolicy):
                 backbone_features[key] = value
 
         return backbone_features
+
+    def _get_VLM_selected_layers_output_from_normalized_input(
+        self, normalized_input: Dict[str, Any], selected_layers: list[int]
+    ) -> list[Dict[str, Any]]:
+        """Extract backbone features from normalized input."""
+        # Set up autocast context (same as _get_action_from_normalized_input)
+        with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=COMPUTE_DTYPE):
+            backbone_outputs = self.model.get_VLM_selected_layers_output(normalized_input, selected_layers)
+
+        # Convert BatchFeature to regular dict and move to CPU for each layer
+        processed_outputs = []
+        for layer_output in backbone_outputs:
+            layer_features = {}
+            for key, value in layer_output.items():
+                if isinstance(value, torch.Tensor):
+                    # Convert to float32 first to avoid BFloat16 compatibility issues
+                    layer_features[key] = value.cpu().float()
+                else:
+                    layer_features[key] = value
+            processed_outputs.append(layer_features)
+
+        return processed_outputs
 
     def get_modality_config(self) -> Dict[str, ModalityConfig]:
         """
