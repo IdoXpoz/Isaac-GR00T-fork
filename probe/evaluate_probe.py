@@ -351,11 +351,6 @@ def evaluate_single_probe(feature_col_name: str = "mean_pooled_layer_1", action_
     print(f"Feature col name: {FEATURE_COL_NAME}")
     print(f"Action step: {action_step}")
 
-    # Deterministic seeding for reproducible splits and predictions
-    random.seed(42)
-    np.random.seed(42)
-    torch.manual_seed(42)
-
     _create_output_directory_if_missing(probe_output_dir)
 
     # Validate inputs
