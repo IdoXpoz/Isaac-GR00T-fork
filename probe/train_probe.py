@@ -289,7 +289,7 @@ def load_probe_data(
         # Process action targets
         if row["action_right_arm"] is not None:
             actions_tensor = torch.tensor(row["action_right_arm"], dtype=torch.float32)
-            action_step_tensor = actions_tensor[action_step * 16 : action_step * 16 + 7]
+            action_step_tensor = actions_tensor[action_step * 7 : action_step * 7 + 7]
             action_targets.append(action_step_tensor)
         else:
             action_targets.append(None)
