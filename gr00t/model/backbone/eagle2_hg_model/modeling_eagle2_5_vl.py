@@ -306,6 +306,7 @@ class Eagle2_5_VLForConditionalGeneration(Eagle2_5_VLPreTrainedModel, Generation
             vit_embeds = self.vision_model(pixel_values=pixel_values, output_hidden_states=False, return_dict=True)
             if hasattr(vit_embeds, "last_hidden_state"):
                 vit_embeds = vit_embeds.last_hidden_state
+            print("vit_embeds.shape: ", vit_embeds.shape)
 
         else:
             vit_embeds = self.vision_model(
