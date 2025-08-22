@@ -10,7 +10,7 @@ def extract_single_step_data(policy, step_data, dataset_info):
     Returns:
         data_dict: Dictionary with dataset, step_data, vlm_output, final_output
     """
-    step_data["annotation.human.action.task_description"] = "raise both hands up"
+    # step_data["annotation.human.action.task_description"] = "raise both hands up"
 
     print(f"step_data: {step_data}")
 
