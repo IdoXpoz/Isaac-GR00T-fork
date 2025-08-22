@@ -10,6 +10,7 @@ def extract_single_step_data(policy, step_data, dataset_info):
     Returns:
         data_dict: Dictionary with dataset, step_data, vlm_output, final_output
     """
+    print(f"step_data: {step_data}")
 
     selected_layers = [1, 3, 6, 9, 12]
     with torch.no_grad():
@@ -23,18 +24,18 @@ def extract_single_step_data(policy, step_data, dataset_info):
             )
 
         # Extract action head output
-        action = policy.get_action(step_data)
-        action_right_arm = action["action.right_arm"]
+        # action = policy.get_action(step_data)
+        # action_right_arm = action["action.right_arm"]
         # turn action_right_arm to 1d array
-        action_right_arm = action_right_arm.reshape(-1)
+        # action_right_arm = action_right_arm.reshape(-1)
 
         # Create the data in user's specified format
         data_dict = {
             "sample_index": dataset_info["sample_index"],
             "global_index": dataset_info["global_index"],
-            **{f"mean_pooled_layer_{i}": vlm_output[i]["mean_pooled"] for i in range(len(vlm_output))},
-            **{f"last_vector_layer_{i}": vlm_output[i]["last_vector"] for i in range(len(vlm_output))},
-            "action_right_arm": action_right_arm,
+            **{f"mean_pooled_layer_{selected_layers[i]}": vlm_output[i]["mean_pooled"] for i in range(len(vlm_output))},
+            **{f"last_vector_layer_{selected_layers[i]}": vlm_output[i]["last_vector"] for i in range(len(vlm_output))},
+            # "action_right_arm": action_right_arm,
         }
 
         print(f"data_dict: {data_dict}")

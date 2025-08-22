@@ -164,6 +164,45 @@ class EagleBackbone(nn.Module):
             for i in range(len(selected_layers))
         ]
 
+    def forward_eagle_and_return_siglip_selected_layers(
+        self, vl_input: BatchFeature, selected_layers: list[int]
+    ) -> list[BatchFeature]:
+        eagle_prefix = "eagle_"
+        eagle_input = {k.removeprefix(eagle_prefix): v for k, v in vl_input.items() if k.startswith(eagle_prefix)}
+        del eagle_input["image_sizes"]
+
+        # Log input shapes
+        print("🔍 VLM Input shapes:")
+        for key, value in eagle_input.items():
+            if hasattr(value, "shape"):
+                print(f"  {key}: {value.shape}")
+            else:
+                print(f"  {key}: {type(value)} (no shape)")
+
+        eagle_output = self.eagle_model(**eagle_input, output_hidden_states=True, return_dict=True)
+        print("taking eagle output from layers", selected_layers)
+        eagle_features_per_layer = [eagle_output.hidden_states[layer] for layer in selected_layers]
+
+        # Log VLM output shape before linear projection
+        print(f"🔍 VLM Raw Output shape (layers {selected_layers}): {eagle_features_per_layer[0].shape}")
+
+        eagle_features_per_layer_projected = [
+            self.eagle_linear(eagle_features_per_layer[i]) for i in range(len(selected_layers))
+        ]
+
+        # Log final output shape after linear projection
+        print(f"🔍 VLM Final Output shape (after linear): {eagle_features_per_layer_projected[0].shape}")
+
+        return [
+            BatchFeature(
+                data={
+                    "backbone_features": eagle_features_per_layer_projected[i],
+                    "backbone_attention_mask": eagle_input["attention_mask"],
+                }
+            )
+            for i in range(len(selected_layers))
+        ]
+
     def forward(self, vl_input: BatchFeature) -> BatchFeature:
         self.set_frozen_modules_to_eval_mode()
 
