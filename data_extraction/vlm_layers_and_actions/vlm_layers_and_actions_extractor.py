@@ -10,6 +10,14 @@ def extract_single_step_data(policy, step_data, dataset_info):
     Returns:
         data_dict: Dictionary with dataset, step_data, vlm_output, final_output
     """
+
+    # Extract action head output
+    action = policy.get_action(step_data)
+    action_right_arm = action["action.right_arm"]
+    # turn action_right_arm to 1d array
+    action_right_arm = action_right_arm.reshape(-1)
+
+    # Change action and extract VLM features
     step_data["annotation.human.coarse_action"] = ["unlocked_waist: raise both hands up"]
 
     selected_layers = [1, 3, 6, 9, 12]
@@ -22,12 +30,6 @@ def extract_single_step_data(policy, step_data, dataset_info):
             vlm_output[i]["mean_pooled"], vlm_output[i]["last_vector"] = apply_mean_pooling_and_last_vector(
                 vlm_output[i]["backbone_features"]
             )
-
-        # Extract action head output
-        # action = policy.get_action(step_data)
-        # action_right_arm = action["action.right_arm"]
-        # turn action_right_arm to 1d array
-        # action_right_arm = action_right_arm.reshape(-1)
 
         # Create the data in user's specified format
         data_dict = {
