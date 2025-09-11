@@ -504,7 +504,7 @@ def train_all_probes_for_single_action_step(
     Args:
         data_path: Path to the processed data file
     """
-    for layer in range(0, 5):
+    for layer in range(3, 5):
         for pooling in ["mean_pooled", "last_vector"]:
             train_single_probe(
                 data_path=data_path,
