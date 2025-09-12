@@ -504,10 +504,23 @@ def train_all_probes_for_single_action_step(
     Args:
         data_path: Path to the processed data file
     """
-    for layer in range(3, 5):
+    for layer in range(0, 5):
         for pooling in ["mean_pooled", "last_vector"]:
             train_single_probe(
                 data_path=data_path,
                 feature_col_name=f"{pooling}_layer_{layer}",
                 action_step=action_step,
             )
+
+
+def train_all_action_steps_for_specific_layer(
+    layer: int,
+    pooling_method: str,
+    data_path: str = "/content/drive/MyDrive/probes/probe_training_data_60k_processed.parquet",
+):
+    for action_step in range(16):
+        train_single_probe(
+            data_path=data_path,
+            feature_col_name=f"{pooling_method}_layer_{layer}",
+            action_step=action_step,
+        )
