@@ -590,3 +590,183 @@ def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = T
         results[name] = {"mse": mse_values[i], "mean_correlation": correlation_values[i]}
 
     return results
+
+
+def evaluate_all_action_steps_for_specific_layer(
+    layer: int,
+    pooling_method: str,
+    data_path: str = "/content/drive/MyDrive/probes/probe_training_data_60k_processed.parquet",
+    max_action_steps: int = 16,
+):
+    """Evaluate probes for a specific layer and pooling method across all action steps.
+
+    Args:
+        layer: Layer number (0-4)
+        pooling_method: Pooling method ("mean_pooled" or "last_vector")
+        data_path: Path to the processed data file
+        max_action_steps: Maximum number of action steps to evaluate
+    """
+    feature_col_name = f"{pooling_method}_layer_{layer}"
+
+    print(f"\n🔍 Evaluating {feature_col_name} across {max_action_steps} action steps")
+    print("=" * 60)
+
+    for action_step in range(max_action_steps):
+        print(f"\n📊 Evaluating {feature_col_name} for action step {action_step}")
+        print("-" * 40)
+
+        try:
+            evaluate_single_probe(
+                feature_col_name=feature_col_name,
+                action_step=action_step,
+                data_path=data_path,
+            )
+        except Exception as e:
+            print(f"❌ Error evaluating action step {action_step}: {str(e)}")
+            continue
+
+    print(f"\n🎉 Completed evaluation of {feature_col_name} across all action steps")
+
+
+def compare_all_action_steps_for_specific_layer(
+    layer: int,
+    pooling_method: str,
+    max_action_steps: int = 16,
+    show_plot: bool = True,
+) -> Dict[str, Dict[str, float]]:
+    """Create a comparison graph of MSE and mean correlation across action steps for a specific layer.
+
+    Args:
+        layer: Layer number (0-4)
+        pooling_method: Pooling method ("mean_pooled" or "last_vector")
+        max_action_steps: Maximum number of action steps to compare
+        show_plot: Whether to display the plot
+
+    Returns:
+        Dictionary containing metrics for all action steps
+    """
+    feature_col_name = f"{pooling_method}_layer_{layer}"
+
+    print(f"\n📊 Comparing {feature_col_name} across {max_action_steps} action steps")
+    print("=" * 60)
+
+    # Storage for metrics
+    action_step_names = []
+    mse_values = []
+    correlation_values = []
+    missing_steps = []
+
+    # Load metrics for each action step
+    output_base_dir = "/content/drive/MyDrive/probes"
+
+    for action_step in range(max_action_steps):
+        probe_output_dir = os.path.join(output_base_dir, feature_col_name, f"action_step_{action_step}")
+        metrics_path = os.path.join(probe_output_dir, "evaluation_metrics.pkl")
+
+        if os.path.exists(metrics_path):
+            try:
+                with open(metrics_path, "rb") as f:
+                    metrics = pickle.load(f)
+
+                action_step_names.append(f"Step {action_step}")
+                mse_values.append(metrics["mse"])
+
+                # Calculate mean correlation
+                correlations = metrics["correlations"]
+                if isinstance(correlations, list):
+                    mean_corr = np.mean([c for c in correlations if not np.isnan(c)])
+                else:
+                    mean_corr = correlations if not np.isnan(correlations) else 0.0
+                correlation_values.append(mean_corr)
+
+                print(f"✅ Loaded action step {action_step}: MSE={metrics['mse']:.6f}, Mean Corr={mean_corr:.4f}")
+
+            except Exception as e:
+                print(f"❌ Error loading action step {action_step}: {str(e)}")
+                missing_steps.append(action_step)
+        else:
+            print(f"⚠️  Missing metrics for action step {action_step}")
+            missing_steps.append(action_step)
+
+    if not action_step_names:
+        print("❌ No action step metrics found. Make sure to run evaluation first.")
+        return {}
+
+    # Create comparison plot
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+    # MSE comparison
+    bars1 = ax1.bar(range(len(action_step_names)), mse_values, color="steelblue", alpha=0.7)
+    ax1.set_xlabel("Action Step")
+    ax1.set_ylabel("MSE (Lower is Better)")
+    ax1.set_title(f"MSE Comparison - {feature_col_name}")
+    ax1.set_xticks(range(len(action_step_names)))
+    ax1.set_xticklabels(action_step_names, rotation=45, ha="right")
+    ax1.grid(True, alpha=0.3)
+
+    # Add value labels on bars
+    for i, (bar, value) in enumerate(zip(bars1, mse_values)):
+        ax1.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(mse_values) * 0.01,
+            f"{value:.4f}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+
+    # Correlation comparison
+    bars2 = ax2.bar(range(len(action_step_names)), correlation_values, color="darkorange", alpha=0.7)
+    ax2.set_xlabel("Action Step")
+    ax2.set_ylabel("Mean Correlation (Higher is Better)")
+    ax2.set_title(f"Mean Correlation Comparison - {feature_col_name}")
+    ax2.set_xticks(range(len(action_step_names)))
+    ax2.set_xticklabels(action_step_names, rotation=45, ha="right")
+    ax2.grid(True, alpha=0.3)
+
+    # Add value labels on bars
+    for i, (bar, value) in enumerate(zip(bars2, correlation_values)):
+        ax2.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(correlation_values) * 0.01,
+            f"{value:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+
+    plt.tight_layout()
+
+    output_dir = os.path.join(output_base_dir, "comparisons")
+    os.makedirs(output_dir, exist_ok=True)
+
+    plot_path = os.path.join(output_dir, f"action_steps_comparison_{feature_col_name}.png")
+    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+
+    if show_plot:
+        plt.show()
+
+    # Print summary
+    print(f"\n📈 Best performing action steps for {feature_col_name}:")
+
+    # Find best MSE (lowest)
+    if mse_values:
+        best_mse_idx = np.argmin(mse_values)
+        print(f"  🏆 Lowest MSE: {action_step_names[best_mse_idx]} ({mse_values[best_mse_idx]:.6f})")
+
+    # Find best correlation (highest)
+    if correlation_values:
+        best_corr_idx = np.argmax(correlation_values)
+        print(f"  🏆 Highest Correlation: {action_step_names[best_corr_idx]} ({correlation_values[best_corr_idx]:.4f})")
+
+    if missing_steps:
+        print(f"\n⚠️  Missing evaluations for action steps: {', '.join(map(str, missing_steps))}")
+
+    print(f"\n💾 Comparison plot saved to: {plot_path}")
+
+    # Return organized results
+    results = {}
+    for i, name in enumerate(action_step_names):
+        results[name] = {"mse": mse_values[i], "mean_correlation": correlation_values[i]}
+
+    return results
