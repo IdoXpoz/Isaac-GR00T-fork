@@ -518,7 +518,7 @@ def train_all_action_steps_for_specific_layer(
     pooling_method: str,
     data_path: str = "/content/drive/MyDrive/probes/probe_training_data_60k_processed.parquet",
 ):
-    for action_step in range(7, 16):
+    for action_step in range(9, 16):
         train_single_probe(
             data_path=data_path,
             feature_col_name=f"{pooling_method}_layer_{layer}",
