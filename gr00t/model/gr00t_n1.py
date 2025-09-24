@@ -219,6 +219,51 @@ class GR00T_N1_5(PreTrainedModel):
 
         return backbone_outputs_per_layer
 
+    def get_action_using_selected_vlm_layer(
+        self,
+        inputs: dict,
+        selected_layer: int,
+    ) -> BatchFeature:
+        """
+        Get action prediction using output from a specific backbone layer instead of the final layer.
+        This allows experimenting with different intermediate representations for action prediction.
+
+        Args:
+            inputs: Dictionary containing observation data (video, state, annotation, etc.)
+            selected_layer: Which backbone layer to use for action prediction (0-based indexing)
+
+        Returns:
+            BatchFeature: Contains action_pred with shape (batch_size, action_horizon, action_dim)
+        """
+        backbone_inputs, action_inputs = self.prepare_input(inputs)
+
+        # Get output from the specified layer only
+        backbone_outputs_per_layer = self.backbone.forward_eagle_and_return_selected_layers(
+            backbone_inputs, [selected_layer]
+        )
+
+        # Validate that we got exactly one layer output
+        if len(backbone_outputs_per_layer) != 1:
+            raise ValueError(f"Expected 1 layer output, got {len(backbone_outputs_per_layer)}")
+
+        # Use the selected layer's output as backbone output
+        backbone_outputs = backbone_outputs_per_layer[0]
+
+        # Validate the layer output has the expected structure
+        if not isinstance(backbone_outputs, BatchFeature) or BACKBONE_FEATURE_KEY not in backbone_outputs:
+            error_msg = ERROR_MSG
+            error_msg += f"\n{isinstance(backbone_outputs, BatchFeature)=}"
+            error_msg += f"\n{BACKBONE_FEATURE_KEY in backbone_outputs=}"
+            if BACKBONE_FEATURE_KEY in backbone_outputs:
+                error_msg += f"\n{backbone_outputs[BACKBONE_FEATURE_KEY].shape=}"
+            raise ValueError(error_msg)
+
+        # Run action head with the selected layer's output
+        action_head_outputs = self.action_head.get_action(backbone_outputs, action_inputs)
+        self.validate_data(action_head_outputs, backbone_outputs, is_training=False)
+
+        return action_head_outputs
+
     def prepare_input(self, inputs) -> Tuple[BatchFeature, BatchFeature]:
         self.validate_inputs(inputs)
         backbone_inputs = self.backbone.prepare_input(inputs)

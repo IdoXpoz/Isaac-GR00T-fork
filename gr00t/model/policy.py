@@ -255,10 +255,54 @@ class Gr00tPolicy(BasePolicy):
 
         return processed_features
 
+    def get_action_using_selected_vlm_layer(self, observations: Dict[str, Any], selected_layer: int) -> Dict[str, Any]:
+        """
+        Get action prediction using output from a specific backbone layer instead of the final layer.
+        This allows experimenting with different intermediate representations for action prediction.
+
+        Args:
+            observations (Dict[str, Any]): The observation to make a prediction for.
+                Same format as get_action: video, state, annotation data.
+            selected_layer (int): Which backbone layer to use for action prediction (0-based indexing)
+
+        Returns:
+            Dict[str, Any]: The predicted action in the same format as get_action.
+        """
+        # Handle batching the same way as get_action
+        is_batch = self._check_state_is_batched(observations)
+        if not is_batch:
+            observations = unsqueeze_dict_values(observations)
+
+        # Ensure keys are all numpy arrays (same as get_action)
+        for k, v in observations.items():
+            if not isinstance(v, np.ndarray):
+                observations[k] = np.array(v)
+
+        # Apply transforms
+        normalized_input = self.apply_transforms(observations)
+
+        normalized_action = self._get_action_using_selected_vlm_layer_normalized_input(normalized_input, selected_layer)
+        unnormalized_action = self._get_unnormalized_action(normalized_action)
+
+        if not is_batch:
+            unnormalized_action = squeeze_dict_values(unnormalized_action)
+        return unnormalized_action
+
     def _get_action_from_normalized_input(self, normalized_input: Dict[str, Any]) -> torch.Tensor:
         # Set up autocast context if needed
         with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=COMPUTE_DTYPE):
             model_pred = self.model.get_action(normalized_input)
+
+        normalized_action = model_pred["action_pred"].float()
+        return normalized_action
+
+    def _get_action_using_selected_vlm_layer_normalized_input(
+        self, normalized_input: Dict[str, Any], selected_layer: int
+    ) -> torch.Tensor:
+        """Extract action using a specific backbone layer from normalized input."""
+        # Set up autocast context (same as _get_action_from_normalized_input)
+        with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=COMPUTE_DTYPE):
+            model_pred = self.model.get_action_using_selected_vlm_layer(normalized_input, selected_layer)
 
         normalized_action = model_pred["action_pred"].float()
         return normalized_action
