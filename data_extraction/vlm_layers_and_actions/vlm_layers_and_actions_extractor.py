@@ -1,43 +1,50 @@
+import os
 import torch
-from data_extraction.utils.vlm_features import apply_mean_pooling_and_last_vector
+from data_extraction.utils.batches import extract_batches, merge_batches
+from data_extraction.utils.extraction_functions import extract_single_step_data
+from gr00t.model.policy import Gr00tPolicy
+from gr00t.experiment.data_config import DATA_CONFIG_MAP
 
+def main():
+    MODEL_PATH = "nvidia/GR00T-N1.5-3B"
+    DATASET_ROOT = "/home/morg/students/idoavnir/Isaac-GR00T-fork/gr00t_dataset"
+    OUTPUT_DIR = "/home/morg/students/idoavnir/Isaac-GR00T-fork/vlm_by_layers_raise_hands"
+    EMBODIMENT_TAG = "gr1"
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    # Create output directory
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
+    print(f"Using device: {device}")
+    print(f"Output directory: {OUTPUT_DIR}")
+    
+    try: 
+        data_config = DATA_CONFIG_MAP["fourier_gr1_arms_waist"]
+        modality_config = data_config.modality_config()
+        modality_transform = data_config.transform()
 
-# Define extraction functions in user's specified format
-def extract_single_step_data(policy, step_data, dataset_info):
-    """
-    Extract VLM and diffusion outputs in the user's specified format.
+        policy = Gr00tPolicy(
+            model_path=MODEL_PATH,
+            embodiment_tag=EMBODIMENT_TAG,
+            modality_config=modality_config,
+            modality_transform=modality_transform,
+            device=device,
+        )
 
-    Returns:
-        data_dict: Dictionary with dataset, step_data, vlm_output, final_output
-    """
-    step_data["annotation.human.coarse_action"] = ["unlocked_waist: raise both hands up"]
+        print("✅ Policy loaded successfully!")
 
-    selected_layers = [1, 3, 6, 9, 12]
-    with torch.no_grad():
-        # Extract VLM backbone features (without action head)
-        vlm_output = policy.get_VLM_selected_layers_output(step_data, selected_layers)
+        extract_batches(policy, OUTPUT_DIR)
 
-        # take every returned layer, get the mean pool and last vector
-        for i in range(len(vlm_output)):
-            vlm_output[i]["mean_pooled"], vlm_output[i]["last_vector"] = apply_mean_pooling_and_last_vector(
-                vlm_output[i]["backbone_features"]
-            )
+        print("✅ Batches extracted successfully!")
+        print("merging batches...")
 
-        # Extract action head output
-        # action = policy.get_action(step_data)
-        # action_right_arm = action["action.right_arm"]
-        # turn action_right_arm to 1d array
-        # action_right_arm = action_right_arm.reshape(-1)
+        merge_batches(OUTPUT_DIR)
 
-        # Create the data in user's specified format
-        data_dict = {
-            "sample_index": dataset_info["sample_index"],
-            "global_index": dataset_info["global_index"],
-            **{f"mean_pooled_layer_{selected_layers[i]}": vlm_output[i]["mean_pooled"] for i in range(len(vlm_output))},
-            **{f"last_vector_layer_{selected_layers[i]}": vlm_output[i]["last_vector"] for i in range(len(vlm_output))},
-            # "action_right_arm": action_right_arm,
-        }
+        print("✅ Batches merged successfully!")
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        raise
 
-        print(f"data_dict: {data_dict}")
-
-        return data_dict
+if __name__ == "__main__":
+    main()

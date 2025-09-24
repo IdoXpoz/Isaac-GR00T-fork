@@ -1,0 +1,35 @@
+2025-09-06 23:01:04.385794: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2025-09-06 23:01:08.068335: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2025-09-06 23:01:08.068586: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2025-09-06 23:01:09.098728: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2025-09-06 23:01:11.227591: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI AVX512_BF16 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2025-09-06 23:01:19.359205: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/albumentations/__init__.py:13: UserWarning: A new version of Albumentations is available: 2.0.8 (you have 1.4.18). Upgrade using: pip install -U albumentations. To disable automatic update checks, set the environment variable NO_ALBUMENTATIONS_UPDATE to 1.
+  check_for_updates()
+Traceback (most recent call last):
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/data_extraction/vlm_layers_and_actions/vlm_layers_and_actions_extractor.py", line 3, in <module>
+    from data_extraction.utils.batches import extract_batches, merge_batches
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/data_extraction/utils/batches.py", line 11, in <module>
+    from gr00t.experiment.data_config import DATA_CONFIG_MAP
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/gr00t/experiment/data_config.py", line 33, in <module>
+    from gr00t.model.transforms import GR00TTransform
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/gr00t/model/transforms.py", line 95, in <module>
+    class GR00TTransform(InvertibleModalityTransform):
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/gr00t/model/transforms.py", line 117, in GR00TTransform
+    eagle_processor: ProcessorMixin = Field(default=build_eagle_processor(DEFAULT_EAGLE_PATH))
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/gr00t/model/transforms.py", line 48, in build_eagle_processor
+    eagle_processor = AutoProcessor.from_pretrained(
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/transformers/models/auto/processing_auto.py", line 337, in from_pretrained
+    processor_class = get_class_from_dynamic_module(
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/transformers/dynamic_module_utils.py", line 558, in get_class_from_dynamic_module
+    final_module = get_cached_module_file(
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/transformers/dynamic_module_utils.py", line 387, in get_cached_module_file
+    create_dynamic_module(full_submodule)
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/transformers/dynamic_module_utils.py", line 72, in create_dynamic_module
+    init_hf_modules()
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/transformers/dynamic_module_utils.py", line 57, in init_hf_modules
+    os.makedirs(HF_MODULES_CACHE, exist_ok=True)
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/os.py", line 225, in makedirs
+    mkdir(name, mode)
+OSError: [Errno 122] Disk quota exceeded: '/a/home/cc/students/csguests/idoavnir/.cache/huggingface/modules'
