@@ -1,1 +1,1 @@
-BASE_DRIVE_PATH = "/content/drive/MyDrive"
+BASE_DRIVE_PATH = "/home/morg/students/idoavnir/Isaac-GR00T-fork"

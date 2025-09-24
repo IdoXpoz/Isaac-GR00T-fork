@@ -6,8 +6,8 @@ from gr00t.experiment.data_config import DATA_CONFIG_MAP
 from data_extraction.utils.batches import extract_batches, merge_batches
 
 MODEL_PATH = "nvidia/GR00T-N1.5-3B"
-DATASET_ROOT = "/content/drive/MyDrive/gr00t_dataset"
-OUTPUT_DIR = "/content/drive/MyDrive/vlm_by_layers_raise_hands"
+DATASET_ROOT = "/home/morg/students/idoavnir/Isaac-GR00T-fork/gr00t_dataset"
+OUTPUT_DIR = "/home/morg/students/idoavnir/Isaac-GR00T-fork/vlm_by_layers_raise_hands"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 EMBODIMENT_TAG = "gr1"
