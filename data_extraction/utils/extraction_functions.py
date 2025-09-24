@@ -57,7 +57,6 @@ def extract_single_step_full_inference_using_selected_vlm_layers(policy, step_da
     Returns:
         data_dict: Dictionary with dataset info and action outputs from each layer
     """
-    step_data["annotation.human.coarse_action"] = ["unlocked_waist: raise both hands up"]
 
     selected_layers = [1, 3, 6, 9, 12]
 

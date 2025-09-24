@@ -66,9 +66,15 @@ def save_batch_data(batch_data, batch_id, output_dir: str):
 def extract_batches(
     policy: Gr00tPolicy,
     output_dir: str,
+    extraction_function=None,
 ):
     """
     Main function to extract data in batches with resume capability
+
+    Args:
+        policy: The GR00T policy instance
+        output_dir: Directory to save extracted data
+        extraction_function: Optional custom extraction function to use instead of extract_single_step_data
     """
 
     # Load existing progress
@@ -124,7 +130,10 @@ def extract_batches(
                 }
 
                 # Extract data
-                data_dict = extract_single_step_data(policy, step_data, dataset_info)
+                if extraction_function is not None:
+                    data_dict = extraction_function(policy, step_data, dataset_info)
+                else:
+                    data_dict = extract_single_step_data(policy, step_data, dataset_info)
                 current_batch_data.append(data_dict)
                 samples_processed += 1
 
