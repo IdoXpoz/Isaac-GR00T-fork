@@ -5,7 +5,6 @@ import pandas as pd
 from tqdm import tqdm
 from datetime import datetime
 from data_extraction.utils.progress import load_progress, save_progress
-from data_extraction.utils.extraction_functions import extract_single_step_data
 from gr00t.model.policy import Gr00tPolicy
 from gr00t.data.dataset import LeRobotSingleDataset
 from gr00t.experiment.data_config import DATA_CONFIG_MAP
@@ -66,7 +65,7 @@ def save_batch_data(batch_data, batch_id, output_dir: str):
 def extract_batches(
     policy: Gr00tPolicy,
     output_dir: str,
-    extraction_function=None,
+    extraction_function,
 ):
     """
     Main function to extract data in batches with resume capability
@@ -74,7 +73,7 @@ def extract_batches(
     Args:
         policy: The GR00T policy instance
         output_dir: Directory to save extracted data
-        extraction_function: Optional custom extraction function to use instead of extract_single_step_data
+        extraction_function: Custom extraction function to use for processing each step
     """
 
     # Load existing progress
@@ -130,10 +129,7 @@ def extract_batches(
                 }
 
                 # Extract data
-                if extraction_function is not None:
-                    data_dict = extraction_function(policy, step_data, dataset_info)
-                else:
-                    data_dict = extract_single_step_data(policy, step_data, dataset_info)
+                data_dict = extraction_function(policy, step_data, dataset_info)
                 current_batch_data.append(data_dict)
                 samples_processed += 1
 

@@ -4,6 +4,7 @@ import torch
 from gr00t.model.policy import Gr00tPolicy
 from gr00t.experiment.data_config import DATA_CONFIG_MAP
 from data_extraction.utils.batches import extract_batches, merge_batches
+from data_extraction.utils.extraction_functions import extract_single_step_data_raise_hands
 
 MODEL_PATH = "nvidia/GR00T-N1.5-3B"
 DATASET_ROOT = "/home/morg/students/idoavnir/Isaac-GR00T-fork/gr00t_dataset"
@@ -36,7 +37,7 @@ def create_policy():
 
 def run():
     policy = create_policy()
-    extract_batches(policy, OUTPUT_DIR)
+    extract_batches(policy, OUTPUT_DIR, extract_single_step_data_raise_hands)
     print("\n🎉 Batch extraction completed!")
 
     processed_file, total_samples = merge_batches(OUTPUT_DIR)

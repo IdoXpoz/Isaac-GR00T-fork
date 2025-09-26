@@ -1,7 +1,7 @@
 import os
 import torch
 from data_extraction.utils.batches import extract_batches, merge_batches
-from data_extraction.utils.extraction_functions import extract_single_step_data
+from data_extraction.utils.extraction_functions import extract_single_step_data_raise_hands
 from gr00t.model.policy import Gr00tPolicy
 from gr00t.experiment.data_config import DATA_CONFIG_MAP
 
@@ -34,7 +34,7 @@ def main():
 
         print("✅ Policy loaded successfully!")
 
-        extract_batches(policy, OUTPUT_DIR)
+        extract_batches(policy, OUTPUT_DIR, extract_single_step_data_raise_hands)
 
         print("✅ Batches extracted successfully!")
         print("merging batches...")

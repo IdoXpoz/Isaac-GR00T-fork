@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/data_extraction/action_different_vlm_layers/action_different_vlm_layers_extractor.py", line 3, in <module>
+    from data_extraction.utils.batches import extract_batches, merge_batches
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/data_extraction/utils/batches.py", line 8, in <module>
+    from data_extraction.utils.extraction_functions import extract_single_step_data
+ImportError: cannot import name 'extract_single_step_data' from 'data_extraction.utils.extraction_functions' (/home/morg/students/idoavnir/Isaac-GR00T-fork/data_extraction/utils/extraction_functions.py)

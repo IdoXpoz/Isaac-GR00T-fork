@@ -124,4 +124,5 @@ demo_data/gr00t-gr1-apple-to-shelf/
 tmp/
 output/
 gr00t_dataset/
+action_different_vlm_layers_data/
 
