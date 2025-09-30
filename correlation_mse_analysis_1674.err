@@ -1,0 +1,44 @@
+
+
+==> WARNING: A newer version of conda exists. <==
+    current version: 25.5.1
+    latest version: 25.7.0
+
+Please update conda by running
+
+    $ conda update -n base -c defaults conda
+
+
+
+
+==> WARNING: A newer version of conda exists. <==
+    current version: 25.5.1
+    latest version: 25.7.0
+
+Please update conda by running
+
+    $ conda update -n base -c defaults conda
+
+
+
+
+==> WARNING: A newer version of conda exists. <==
+    current version: 25.5.1
+    latest version: 25.7.0
+
+Please update conda by running
+
+    $ conda update -n base -c defaults conda
+
+
+Traceback (most recent call last):
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/analysis/patching/correlation_and_mse_check.py", line 373, in <module>
+    main()
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/analysis/patching/correlation_and_mse_check.py", line 318, in main
+    wrong_df = load_parquet_data(wrong_data_dir)
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/analysis/patching/correlation_and_mse_check.py", line 21, in load_parquet_data
+    raise FileNotFoundError(f"Merged parquet file not found at: {parquet_path}")
+FileNotFoundError: Merged parquet file not found at: /home/morg/students/idoavnir/Isaac-GR00T-fork/action_wrong_task_different_vlm_layers/batches_parquet/merged_batches.parquet
+slurmstepd: error: _cgroup_procs_check: failed on path (null)/cgroup.procs: No such file or directory
+slurmstepd: error: Cannot write to cgroup.procs for (null)
+slurmstepd: error: Unable to move pid 2270694 to init root cgroup (null)

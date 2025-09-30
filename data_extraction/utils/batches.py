@@ -9,8 +9,8 @@ from gr00t.model.policy import Gr00tPolicy
 from gr00t.data.dataset import LeRobotSingleDataset
 from gr00t.experiment.data_config import DATA_CONFIG_MAP
 
-TARGET_TOTAL_SAMPLES = 60000
-BATCH_SIZE = 1000
+TARGET_TOTAL_SAMPLES = 1
+BATCH_SIZE = 1
 TASK_NAME = "gr1_arms_waist.TrayToPot"
 DATASET_ROOT = "/home/morg/students/idoavnir/Isaac-GR00T-fork/gr00t_dataset"
 EMBODIMENT_TAG = "gr1"

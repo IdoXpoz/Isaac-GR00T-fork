@@ -139,6 +139,11 @@ class EagleBackbone(nn.Module):
                 print(f"  {key}: {value.shape}")
             else:
                 print(f"  {key}: {type(value)} (no shape)")
+        
+        # log the input itself
+        print("🔍 VLM Input itself:")
+        for key, value in eagle_input.items():
+            print(f"  {key}: {value}")
 
         eagle_output = self.eagle_model(**eagle_input, output_hidden_states=True, return_dict=True)
         print("taking eagle output from layers", selected_layers)
