@@ -84,10 +84,11 @@ def extract_single_step_full_inference_using_selected_vlm_layers(policy, step_da
 
         return data_dict
 
+
 def extract_single_step_data_raise_hands_using_selected_vlm_layers(policy, step_data, dataset_info):
     """
     Extract VLM and diffusion outputs in the user's specified format.
-    """#print all keys of step_data
+    """  # print all keys of step_data
     print("step data keys: ", step_data.keys())
     print("annotation.language.language_instruction: ", step_data["annotation.language.language_instruction"])
     print("annotation human: ", step_data["annotation.human"])
@@ -95,33 +96,33 @@ def extract_single_step_data_raise_hands_using_selected_vlm_layers(policy, step_
     step_data["annotation.human.coarse_action"] = ["unlocked_waist: raise both hands up"]
     print("step data after change: ", step_data)
     selected_layers = [1, 3, 6, 9, 12]
-    
+
     print("step data after change: ", step_data)
-    
+
     with torch.no_grad():
         # Create base data dictionary with metadata
         data_dict = {
             "sample_index": dataset_info["sample_index"],
             "global_index": dataset_info["global_index"],
         }
-        
+
         # Run inference for each selected layer
         for layer in selected_layers:
             # Run full inference using the selected VLM layer
             action = policy.get_action_using_selected_vlm_layer(step_data, layer)
-            
-            
+
             # Extract right_arm action and convert to 1d array
             action_right_arm = action["action.right_arm"]
             action_right_arm = action_right_arm.reshape(-1)
-            
+
             # Save with descriptive name
             data_dict[f"action_right_arm_layer_{layer}"] = action_right_arm
-            
+
         print(f"data_dict keys: {list(data_dict.keys())}")
         print(f"action shapes: {[(k, v.shape) for k, v in data_dict.items() if k.startswith('action_')]}")
-        
+
         return data_dict
+
 
 def extract_single_step_data_normal_action(policy, step_data, dataset_info):
     """
@@ -151,4 +152,41 @@ def extract_single_step_data_normal_action(policy, step_data, dataset_info):
         print(f"action shapes: {[(k, v.shape) for k, v in data_dict.items() if k.startswith('action_')]}")
 
         return data_dict
-    
+
+
+def extract_single_step_data_fused_embeddings(policy, step_data, dataset_info):
+    """
+    Extract fused vision-text embeddings before any attention layers.
+
+    This function extracts the raw multimodal embeddings after vision-text fusion
+    but before transformer processing. Useful for analyzing the base representations.
+
+    Args:
+        policy: The GR00T policy instance
+        step_data: Dictionary containing step observation data
+        dataset_info: Dictionary containing sample metadata
+
+    Returns:
+        data_dict: Dictionary with dataset info, fused embeddings, and pooled features
+    """
+    with torch.no_grad():
+        # Extract fused embeddings (before any attention)
+        fused_output = policy.get_fused_embeddings(step_data)
+
+        # Apply pooling operations
+        mean_pooled, last_vector = apply_mean_pooling_and_last_vector(fused_output["fused_embeddings"])
+
+        # Create the data in the specified format
+        data_dict = {
+            "sample_index": dataset_info["sample_index"],
+            "global_index": dataset_info["global_index"],
+            "fused_embeddings": fused_output["fused_embeddings"],  # Full sequence [seq_len, hidden_dim]
+            "attention_mask": fused_output["attention_mask"],  # Attention mask [seq_len]
+            "mean_pooled": mean_pooled,  # Mean pooled [hidden_dim]
+            "last_vector": last_vector,  # Last token [hidden_dim]
+        }
+
+        print(f"Fused embeddings shape: {fused_output['fused_embeddings'].shape}")
+        print(f"data_dict keys: {list(data_dict.keys())}")
+
+        return data_dict

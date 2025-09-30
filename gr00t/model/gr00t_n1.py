@@ -172,6 +172,26 @@ class GR00T_N1_5(PreTrainedModel):
         self.validate_data(action_head_outputs, backbone_outputs, is_training=False)
         return action_head_outputs
 
+    def get_fused_embeddings(
+        self,
+        inputs: dict,
+    ) -> BatchFeature:
+        """
+        Get the fused vision-text embeddings before any attention layers.
+        This is useful for analyzing the raw multimodal inputs before transformer processing.
+
+        Args:
+            inputs: Dictionary containing observation data (video, state, annotation, etc.)
+
+        Returns:
+            BatchFeature: Contains fused_embeddings and attention_mask
+        """
+        backbone_inputs, _ = self.prepare_input(inputs)
+        # Get fused embeddings from backbone
+        fused_outputs = self.backbone.get_fused_embeddings(backbone_inputs)
+
+        return fused_outputs
+
     def get_VLM_selected_layer_output(
         self,
         inputs: dict,

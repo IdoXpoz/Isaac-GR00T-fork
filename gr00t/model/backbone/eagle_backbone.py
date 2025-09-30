@@ -139,7 +139,7 @@ class EagleBackbone(nn.Module):
                 print(f"  {key}: {value.shape}")
             else:
                 print(f"  {key}: {type(value)} (no shape)")
-        
+
         # log the input itself
         print("🔍 VLM Input itself:")
         for key, value in eagle_input.items():
@@ -207,6 +207,39 @@ class EagleBackbone(nn.Module):
             )
             for i in range(len(selected_layers))
         ]
+
+    def get_fused_embeddings(self, vl_input: BatchFeature) -> BatchFeature:
+        """
+        Extract the fused vision-text embeddings before any attention layers.
+
+        Returns:
+            BatchFeature with:
+                - fused_embeddings: [B, seq_len, hidden_dim]
+                - attention_mask: [B, seq_len]
+        """
+        self.set_frozen_modules_to_eval_mode()
+
+        eagle_prefix = "eagle_"
+        eagle_input = {k.removeprefix(eagle_prefix): v for k, v in vl_input.items() if k.startswith(eagle_prefix)}
+        del eagle_input["image_sizes"]
+
+        # Log input shapes
+        print("🔍 VLM Input shapes for fused embeddings:")
+        for key, value in eagle_input.items():
+            if hasattr(value, "shape"):
+                print(f"  {key}: {value.shape}")
+
+        # Call the new method to get fused embeddings
+        fused_embeds = self.eagle_model.get_fused_embeddings(**eagle_input)
+
+        print(f"🔍 Fused Embeddings shape: {fused_embeds.shape}")
+
+        return BatchFeature(
+            data={
+                "fused_embeddings": fused_embeds,
+                "attention_mask": eagle_input["attention_mask"],
+            }
+        )
 
     def forward(self, vl_input: BatchFeature) -> BatchFeature:
         self.set_frozen_modules_to_eval_mode()
