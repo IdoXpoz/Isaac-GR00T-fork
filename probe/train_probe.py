@@ -390,7 +390,7 @@ def _create_or_load_split_indices(
 
 def train_single_probe(
     data_path: str,
-    feature_col_name: str = "mean_pooled_layer_1",
+    feature_col_name: str = "last_vector",
     batch_size: int = 32,
     num_epochs: int = 100,
     action_step: int = 0,
@@ -415,7 +415,7 @@ def train_single_probe(
     print(f"Action step: {action_step}")
 
     # Set up output directory - save to mounted drive
-    output_base_dir = "/content/drive/MyDrive/probes"
+    output_base_dir = "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/text_embeddings"
     probe_output_dir = os.path.join(output_base_dir, feature_col_name, f"action_step_{action_step}")
     os.makedirs(probe_output_dir, exist_ok=True)
     print(f"📁 Saving outputs to: {probe_output_dir}")

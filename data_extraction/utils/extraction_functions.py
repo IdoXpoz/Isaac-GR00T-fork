@@ -173,20 +173,22 @@ def extract_single_step_data_fused_embeddings(policy, step_data, dataset_info):
         # Extract fused embeddings (before any attention)
         fused_output = policy.get_fused_embeddings(step_data)
 
+        # Convert BFloat16 to Float32 and then to numpy for parquet compatibility
+        fused_embeddings_np = fused_output["fused_embeddings"].float().cpu().numpy()
+        attention_mask_np = fused_output["attention_mask"].float().cpu().numpy()
+
         # Apply pooling operations
-        mean_pooled, last_vector = apply_mean_pooling_and_last_vector(fused_output["fused_embeddings"])
+        mean_pooled, last_vector = apply_mean_pooling_and_last_vector(fused_embeddings_np)
 
         # Create the data in the specified format
         data_dict = {
             "sample_index": dataset_info["sample_index"],
             "global_index": dataset_info["global_index"],
-            "fused_embeddings": fused_output["fused_embeddings"],  # Full sequence [seq_len, hidden_dim]
-            "attention_mask": fused_output["attention_mask"],  # Attention mask [seq_len]
             "mean_pooled": mean_pooled,  # Mean pooled [hidden_dim]
             "last_vector": last_vector,  # Last token [hidden_dim]
         }
 
-        print(f"Fused embeddings shape: {fused_output['fused_embeddings'].shape}")
+        print(f"Fused embeddings shape: {fused_embeddings_np.shape}")
         print(f"data_dict keys: {list(data_dict.keys())}")
 
         return data_dict
