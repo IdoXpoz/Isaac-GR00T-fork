@@ -216,10 +216,13 @@ def print_evaluation_summary(metrics: Dict[str, float]):
 
 def _configure_paths(feature_col_name: str, action_step: int, data_path: str) -> Tuple[str, str, str, str, str]:
     """Return output dir, model path, data path, history path, feature col name label."""
-    output_base_dir = "/content/drive/MyDrive/probes"
+    output_base_dir = "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/text_embeddings"
     probe_output_dir = os.path.join(output_base_dir, feature_col_name, f"action_step_{action_step}")
     model_path_final = os.path.join(probe_output_dir, "best_probe_model.pth")
-    data_path_final = data_path or "/content/drive/MyDrive/probes/probe_training_data_60k_processed.parquet"
+    data_path_final = (
+        data_path
+        or "/home/morg/students/idoavnir/Isaac-GR00T-fork/fused_embeddings_data/batches_parquet/merged_batches.parquet"
+    )
     history_path = os.path.join(probe_output_dir, "training_history.pkl")
     return probe_output_dir, model_path_final, data_path_final, history_path, feature_col_name
 
@@ -243,7 +246,7 @@ def _validate_required_files(model_path: str, data_path: str) -> bool:
 
 def _load_split_indices() -> Tuple[List[int], List[int]]:
     """Load split indices from a shared, hardcoded location."""
-    output_base_dir = "/content/drive/MyDrive/probes"
+    output_base_dir = "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/text_embeddings"
     split_path = os.path.join(output_base_dir, "split_indices.json")
     if not os.path.exists(split_path):
         raise FileNotFoundError(
@@ -341,7 +344,7 @@ def _save_metrics_pickle(metrics: Dict[str, float], output_dir: str) -> str:
     return evaluation_metrics_path
 
 
-def evaluate_single_probe(feature_col_name: str = "mean_pooled_layer_1", action_step: int = 0, data_path: str = None):
+def evaluate_single_probe(feature_col_name: str = "last_vector", action_step: int = 0, data_path: str = None):
     # Setup
     probe_output_dir, MODEL_PATH, DATA_PATH, HISTORY_PATH, FEATURE_COL_NAME = _configure_paths(
         feature_col_name, action_step, data_path
@@ -401,7 +404,7 @@ def evaluate_single_probe(feature_col_name: str = "mean_pooled_layer_1", action_
 
 
 def evaluate_all_probes_for_single_action_step(
-    data_path: str = "/content/drive/MyDrive/probes/probe_training_data_60k_processed.parquet",
+    data_path: str = "/home/morg/students/idoavnir/Isaac-GR00T-fork/fused_embeddings_data/batches_parquet/merged_batches.parquet",
     action_step: int = 0,
 ):
     """Evaluate all probes for a single action step.
@@ -457,7 +460,7 @@ def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = T
     missing_probes = []
 
     # Load metrics for each probe
-    output_base_dir = "/content/drive/MyDrive/probes"
+    output_base_dir = "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/text_embeddings"
 
     for pooling in pooling_methods:
         for layer in layers:
@@ -595,7 +598,7 @@ def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = T
 def evaluate_all_action_steps_for_specific_layer(
     layer: int,
     pooling_method: str,
-    data_path: str = "/content/drive/MyDrive/probes/probe_training_data_60k_processed.parquet",
+    data_path: str = "/home/morg/students/idoavnir/Isaac-GR00T-fork/fused_embeddings_data/batches_parquet/merged_batches.parquet",
     max_action_steps: int = 16,
 ):
     """Evaluate probes for a specific layer and pooling method across all action steps.
@@ -657,7 +660,7 @@ def compare_all_action_steps_for_specific_layer(
     missing_steps = []
 
     # Load metrics for each action step
-    output_base_dir = "/content/drive/MyDrive/probes"
+    output_base_dir = "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/text_embeddings"
 
     for action_step in range(max_action_steps):
         probe_output_dir = os.path.join(output_base_dir, feature_col_name, f"action_step_{action_step}")
