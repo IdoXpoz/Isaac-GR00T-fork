@@ -32,7 +32,7 @@ def run():
 
     # Run evaluation with specified parameters
     evaluate_single_probe(
-        feature_col_name="last_vector_layer_0",  # Can be modified as needed
+        feature_col_name="mean_pooled",  # Can be modified as needed
         action_step=0,
         data_path=data_path,
     )
