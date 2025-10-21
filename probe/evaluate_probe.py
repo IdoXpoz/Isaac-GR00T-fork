@@ -216,7 +216,7 @@ def print_evaluation_summary(metrics: Dict[str, float]):
 
 def _configure_paths(feature_col_name: str, action_step: int, data_path: str) -> Tuple[str, str, str, str, str]:
     """Return output dir, model path, data path, history path, feature col name label."""
-    output_base_dir = "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/text_embeddings"
+    output_base_dir = "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/separated_embeddings"
     probe_output_dir = os.path.join(output_base_dir, feature_col_name, f"action_step_{action_step}")
     model_path_final = os.path.join(probe_output_dir, "best_probe_model.pth")
     data_path_final = (
@@ -246,7 +246,7 @@ def _validate_required_files(model_path: str, data_path: str) -> bool:
 
 def _load_split_indices() -> Tuple[List[int], List[int]]:
     """Load split indices from a shared, hardcoded location."""
-    output_base_dir = "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/text_embeddings"
+    output_base_dir = "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/separated_embeddings"
     split_path = os.path.join(output_base_dir, "split_indices.json")
     if not os.path.exists(split_path):
         raise FileNotFoundError(

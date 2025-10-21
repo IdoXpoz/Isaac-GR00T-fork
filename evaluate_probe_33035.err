@@ -1,0 +1,33 @@
+Loading data:   0%|          | 0/60000 [00:00<?, ?it/s]Loading data:   0%|          | 0/60000 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'text_mean_pooled'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/evaluate_probe_runner.py", line 45, in <module>
+    run()
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/evaluate_probe_runner.py", line 34, in run
+    evaluate_single_probe(
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/evaluate_probe.py", line 364, in evaluate_single_probe
+    test_loader, test_dataset, valid_test_indices = _build_test_loader(DATA_PATH, FEATURE_COL_NAME, action_step)
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/evaluate_probe.py", line 264, in _build_test_loader
+    backbone_features, action_targets = load_probe_data(
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/train_probe.py", line 276, in load_probe_data
+    if row[feature_col_name] is not None:
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/pandas/core/series.py", line 1130, in __getitem__
+    return self._get_value(key)
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/pandas/core/series.py", line 1246, in _get_value
+    loc = self.index.get_loc(label)
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'text_mean_pooled'
+slurmstepd: error: _cgroup_procs_check: failed on path (null)/cgroup.procs: No such file or directory
+slurmstepd: error: Cannot write to cgroup.procs for (null)
+slurmstepd: error: Unable to move pid 552979 to init root cgroup (null)

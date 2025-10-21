@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/data_extraction/merge_action_to_separated.py", line 81, in <module>
+    merge_action_to_separated()
+  File "/home/morg/students/idoavnir/Isaac-GR00T-fork/data_extraction/merge_action_to_separated.py", line 55, in merge_action_to_separated
+    separated_df['action_right_arm'] = action_df['action_right_arm_layer_12'].values
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/pandas/core/frame.py", line 4316, in __setitem__
+    self._set_item(key, value)
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/pandas/core/frame.py", line 4529, in _set_item
+    value, refs = self._sanitize_column(value)
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/pandas/core/frame.py", line 5273, in _sanitize_column
+    com.require_length_match(value, self.index)
+  File "/home/morg/students/idoavnir/miniconda/envs/gr00t/lib/python3.10/site-packages/pandas/core/common.py", line 573, in require_length_match
+    raise ValueError(
+ValueError: Length of values (60000) does not match length of index (1)
+slurmstepd: error: _cgroup_procs_check: failed on path (null)/cgroup.procs: No such file or directory
+slurmstepd: error: Cannot write to cgroup.procs for (null)
+slurmstepd: error: Unable to move pid 103141 to init root cgroup (null)

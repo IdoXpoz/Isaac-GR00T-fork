@@ -19,7 +19,7 @@ def run():
 
     # Configure paths
     data_path = (
-        "/home/morg/students/idoavnir/Isaac-GR00T-fork/fused_embeddings_data/batches_parquet/merged_batches.parquet"
+        "/home/morg/students/idoavnir/Isaac-GR00T-fork/separated_embeddings_data/batches_parquet/merged_batches.parquet"
     )
 
     # Check if data file exists
@@ -33,7 +33,7 @@ def run():
     # Run training with specified parameters
     train_single_probe(
         data_path=data_path,
-        feature_col_name="last_vector_layer_0",  # Can be modified as needed
+        feature_col_name="vision_mean_pooled",  # Can be modified as needed
         batch_size=32,
         num_epochs=100,
         action_step=0,

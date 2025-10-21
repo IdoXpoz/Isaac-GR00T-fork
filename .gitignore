@@ -127,4 +127,5 @@ gr00t_dataset/
 action_different_vlm_layers_data/
 action_wrong_task_different_vlm_layers_data/
 fused_embeddings_data/
+separated_embeddings_data/
 

@@ -19,7 +19,7 @@ def run():
 
     # Configure paths
     data_path = (
-        "/home/morg/students/idoavnir/Isaac-GR00T-fork/fused_embeddings_data/batches_parquet/merged_batches.parquet"
+        "/home/morg/students/idoavnir/Isaac-GR00T-fork/separated_embeddings_data/batches_parquet/merged_batches.parquet"
     )
 
     # Check if data file exists
@@ -32,7 +32,7 @@ def run():
 
     # Run evaluation with specified parameters
     evaluate_single_probe(
-        feature_col_name="mean_pooled",  # Can be modified as needed
+        feature_col_name="vision_last_vector",  # Can be modified as needed
         action_step=0,
         data_path=data_path,
     )

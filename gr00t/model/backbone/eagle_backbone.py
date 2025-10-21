@@ -241,6 +241,42 @@ class EagleBackbone(nn.Module):
             }
         )
 
+    def get_separate_embeddings(self, vl_input: BatchFeature) -> BatchFeature:
+        """
+        Extract the text and vision embeddings separately before fusion.
+
+        Returns:
+            BatchFeature with:
+                - text_embeddings: [B, seq_len, hidden_dim]
+                - vision_embeddings: [num_images, num_patches, hidden_dim]
+                - attention_mask: [B, seq_len]
+        """
+        self.set_frozen_modules_to_eval_mode()
+
+        eagle_prefix = "eagle_"
+        eagle_input = {k.removeprefix(eagle_prefix): v for k, v in vl_input.items() if k.startswith(eagle_prefix)}
+        del eagle_input["image_sizes"]
+
+        # Log input shapes
+        print("🔍 VLM Input shapes for separate embeddings:")
+        for key, value in eagle_input.items():
+            if hasattr(value, "shape"):
+                print(f"  {key}: {value.shape}")
+
+        # Call the new method to get separate embeddings
+        separate_embeds = self.eagle_model.get_separate_embeddings(**eagle_input)
+
+        print(f"🔍 Text Embeddings shape: {separate_embeds['text_embeddings'].shape}")
+        print(f"🔍 Vision Embeddings shape: {separate_embeds['vision_embeddings'].shape}")
+
+        return BatchFeature(
+            data={
+                "text_embeddings": separate_embeds["text_embeddings"],
+                "vision_embeddings": separate_embeds["vision_embeddings"],
+                "attention_mask": eagle_input["attention_mask"],
+            }
+        )
+
     def forward(self, vl_input: BatchFeature) -> BatchFeature:
         self.set_frozen_modules_to_eval_mode()
 

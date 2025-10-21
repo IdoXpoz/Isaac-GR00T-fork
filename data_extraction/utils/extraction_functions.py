@@ -192,3 +192,50 @@ def extract_single_step_data_fused_embeddings(policy, step_data, dataset_info):
         print(f"data_dict keys: {list(data_dict.keys())}")
 
         return data_dict
+
+
+def extract_single_step_data_separate_embeddings(policy, step_data, dataset_info):
+    """
+    Extract text and vision embeddings separately before fusion.
+
+    This function extracts the individual text and vision embeddings before they
+    are fused together. Useful for analyzing each modality independently.
+
+    Args:
+        policy: The GR00T policy instance
+        step_data: Dictionary containing step observation data
+        dataset_info: Dictionary containing sample metadata
+
+    Returns:
+        data_dict: Dictionary with dataset info and pooled features from both modalities
+    """
+    with torch.no_grad():
+        # Extract separate embeddings (before fusion)
+        separate_output = policy.get_separate_embeddings(step_data)
+
+        # Convert BFloat16 to Float32 and then to numpy for parquet compatibility
+        text_embeddings_np = separate_output["text_embeddings"].float().cpu().numpy()
+        vision_embeddings_np = separate_output["vision_embeddings"].float().cpu().numpy()
+        attention_mask_np = separate_output["attention_mask"].float().cpu().numpy()
+
+        # Apply pooling operations to text embeddings
+        text_mean_pooled, text_last_vector = apply_mean_pooling_and_last_vector(text_embeddings_np)
+
+        # Apply pooling operations to vision embeddings
+        vision_mean_pooled, vision_last_vector = apply_mean_pooling_and_last_vector(vision_embeddings_np)
+
+        # Create the data in the specified format
+        data_dict = {
+            "sample_index": dataset_info["sample_index"],
+            "global_index": dataset_info["global_index"],
+            "text_mean_pooled": text_mean_pooled,  # Mean pooled text [hidden_dim]
+            "text_last_vector": text_last_vector,  # Last text token [hidden_dim]
+            "vision_mean_pooled": vision_mean_pooled,  # Mean pooled vision [hidden_dim]
+            "vision_last_vector": vision_last_vector,  # Last vision token [hidden_dim]
+        }
+
+        print(f"Text embeddings shape: {text_embeddings_np.shape}")
+        print(f"Vision embeddings shape: {vision_embeddings_np.shape}")
+        print(f"data_dict keys: {list(data_dict.keys())}")
+
+        return data_dict

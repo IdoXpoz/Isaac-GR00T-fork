@@ -218,6 +218,43 @@ class Gr00tPolicy(BasePolicy):
 
         return fused_outputs
 
+    def get_separate_embeddings(self, observations: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get the text and vision embeddings separately before fusion.
+        This extracts the individual modality embeddings before they are combined.
+
+        Args:
+            observations (Dict[str, Any]): The observation to extract embeddings from.
+                Same format as get_action: video, state, annotation data.
+
+        Returns:
+            Dict[str, Any]: Dictionary containing:
+                - 'text_embeddings': Text embeddings [batch, seq_len, hidden_dim]
+                - 'vision_embeddings': Vision embeddings [num_images, num_patches, hidden_dim]
+                - 'attention_mask': Attention mask [batch, seq_len]
+        """
+        # Handle batching the same way as get_action
+        is_batch = self._check_state_is_batched(observations)
+        if not is_batch:
+            observations = unsqueeze_dict_values(observations)
+
+        # Ensure keys are all numpy arrays (same as get_action)
+        for k, v in observations.items():
+            if not isinstance(v, np.ndarray):
+                observations[k] = np.array(v)
+
+        # Apply the same transforms as get_action
+        normalized_input = self.apply_transforms(observations)
+
+        # Extract separate embeddings using the model's new method
+        separate_outputs = self._get_separate_embeddings_from_normalized_input(normalized_input)
+
+        # Remove batch dimension if input wasn't batched
+        if not is_batch:
+            separate_outputs = squeeze_dict_values(separate_outputs)
+
+        return separate_outputs
+
     def get_VLM_selected_layer_output(self, observations: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract backbone features from observations without running through the action head.
@@ -362,6 +399,22 @@ class Gr00tPolicy(BasePolicy):
                 fused_features[key] = value
 
         return fused_features
+
+    def _get_separate_embeddings_from_normalized_input(self, normalized_input: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract separate text and vision embeddings from normalized input."""
+        # Set up autocast context (same as _get_action_from_normalized_input)
+        with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=COMPUTE_DTYPE):
+            separate_outputs = self.model.get_separate_embeddings(normalized_input)
+
+        # Convert BatchFeature to regular dict and move to CPU
+        separate_features = {}
+        for key, value in separate_outputs.items():
+            if isinstance(value, torch.Tensor):
+                separate_features[key] = value.cpu()
+            else:
+                separate_features[key] = value
+
+        return separate_features
 
     def _get_VLM_selected_layer_output_from_normalized_input(self, normalized_input: Dict[str, Any]) -> Dict[str, Any]:
         """Extract backbone features from normalized input."""

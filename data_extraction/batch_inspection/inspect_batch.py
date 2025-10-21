@@ -18,7 +18,7 @@ def main():
     """Main function to inspect the specified parquet file"""
     
     # Define the parquet file path
-    parquet_file_path = "/home/morg/students/idoavnir/Isaac-GR00T-fork/fused_embeddings_data/batches_parquet/merged_batches.parquet"
+    parquet_file_path = "/home/morg/students/idoavnir/Isaac-GR00T-fork/separated_embeddings_data/batches_parquet/merged_batches.parquet"
     
     print("=" * 80)
     print("🔍 PARQUET BATCH INSPECTION")

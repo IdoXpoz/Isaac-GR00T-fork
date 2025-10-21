@@ -192,6 +192,26 @@ class GR00T_N1_5(PreTrainedModel):
 
         return fused_outputs
 
+    def get_separate_embeddings(
+        self,
+        inputs: dict,
+    ) -> BatchFeature:
+        """
+        Get the text and vision embeddings separately before fusion.
+        This is useful for analyzing the individual modality representations.
+
+        Args:
+            inputs: Dictionary containing observation data (video, state, annotation, etc.)
+
+        Returns:
+            BatchFeature: Contains text_embeddings, vision_embeddings, and attention_mask
+        """
+        backbone_inputs, _ = self.prepare_input(inputs)
+        # Get separate embeddings from backbone
+        separate_outputs = self.backbone.get_separate_embeddings(backbone_inputs)
+
+        return separate_outputs
+
     def get_VLM_selected_layer_output(
         self,
         inputs: dict,

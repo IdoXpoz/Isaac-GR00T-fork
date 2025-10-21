@@ -415,7 +415,7 @@ def train_single_probe(
     print(f"Action step: {action_step}")
 
     # Set up output directory - save to mounted drive
-    output_base_dir = "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/text_embeddings"
+    output_base_dir = "/home/morg/students/idoavnir/Isaac-GR00T-fork/probe/separated_embeddings"
     probe_output_dir = os.path.join(output_base_dir, feature_col_name, f"action_step_{action_step}")
     os.makedirs(probe_output_dir, exist_ok=True)
     print(f"📁 Saving outputs to: {probe_output_dir}")

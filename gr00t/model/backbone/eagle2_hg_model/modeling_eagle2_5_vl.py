@@ -255,6 +255,37 @@ class Eagle2_5_VLForConditionalGeneration(Eagle2_5_VLPreTrainedModel, Generation
 
         return input_embeds
 
+    def get_separate_embeddings(
+        self,
+        pixel_values: torch.FloatTensor,
+        input_ids: torch.LongTensor = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        image_flags: Optional[torch.LongTensor] = None,
+    ) -> dict:
+        """
+        Get the text and vision embeddings separately before fusion.
+
+        Returns:
+            dict: Dictionary containing:
+                - 'text_embeddings': Text embeddings of shape [B, seq_len, hidden_dim]
+                - 'vision_embeddings': Vision embeddings of shape [num_images, num_patches, hidden_dim]
+        """
+        # Get text embeddings
+        text_embeds = self.language_model.get_input_embeddings()(input_ids)
+
+        # Extract vision features
+        vision_embeds = self.extract_feature(pixel_values)
+
+        # Filter by image flags if provided
+        if image_flags is not None:
+            image_flags = image_flags.view(-1)
+            vision_embeds = vision_embeds[image_flags == 1]
+
+        return {
+            "text_embeddings": text_embeds,
+            "vision_embeddings": vision_embeds,
+        }
+
     def forward(
         self,
         pixel_values: torch.FloatTensor,
