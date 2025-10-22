@@ -1,0 +1,20 @@
+
+CondaToSPermissionError: Unable to read/write path (/a/home/cc/students/csguests/idoavnir/.cache/conda-anaconda-tos/3c9d068aa053e2a1c4313fe3391b7a8ee57c4fbd09c4e8aeae49ef333a740150.cache) for https://repo.anaconda.com/pkgs/main. Please check permissions.
+
+
+CondaToSPermissionError: Unable to read/write path (/a/home/cc/students/csguests/idoavnir/.cache/conda-anaconda-tos/3c9d068aa053e2a1c4313fe3391b7a8ee57c4fbd09c4e8aeae49ef333a740150.cache) for https://repo.anaconda.com/pkgs/main. Please check permissions.
+
+
+CondaToSPermissionError: Unable to read/write path (/a/home/cc/students/csguests/idoavnir/.cache/conda-anaconda-tos/3c9d068aa053e2a1c4313fe3391b7a8ee57c4fbd09c4e8aeae49ef333a740150.cache) for https://repo.anaconda.com/pkgs/main. Please check permissions.
+
+mkdir -p failed for path /specific/a/home/cc/students/csguests/idoavnir/.config/matplotlib: [Errno 13] Permission denied: '/specific/a/home/cc/students/csguests/idoavnir'
+Matplotlib created a temporary cache directory at /tmp/matplotlib-gky1mbzc because there was an issue with the default path (/specific/a/home/cc/students/csguests/idoavnir/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+mkdir -p failed for path /specific/a/home/cc/students/csguests/idoavnir/.config/matplotlib: [Errno 13] Permission denied: '/specific/a/home/cc/students/csguests/idoavnir'
+Matplotlib created a temporary cache directory at /tmp/matplotlib-82whwx94 because there was an issue with the default path (/specific/a/home/cc/students/csguests/idoavnir/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+mkdir -p failed for path /specific/a/home/cc/students/csguests/idoavnir/.config/matplotlib: [Errno 13] Permission denied: '/specific/a/home/cc/students/csguests/idoavnir'
+Matplotlib created a temporary cache directory at /tmp/matplotlib-g7hlhvw7 because there was an issue with the default path (/specific/a/home/cc/students/csguests/idoavnir/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+/home/morg/students/idoavnir/Isaac-GR00T-fork/analysis/patching/correlation_and_mse_check.py:640: UserWarning: FigureCanvasAgg is non-interactive, and thus cannot be shown
+  plt.show()
+slurmstepd: error: _cgroup_procs_check: failed on path (null)/cgroup.procs: No such file or directory
+slurmstepd: error: Cannot write to cgroup.procs for (null)
+slurmstepd: error: Unable to move pid 2344252 to init root cgroup (null)
