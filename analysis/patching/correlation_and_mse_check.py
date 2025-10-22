@@ -356,8 +356,8 @@ def create_visualizations(results, cross_results=None, output_dir=None):
         ax3.set_xticklabels(results["layers"], rotation=45)
         ax3.legend()
         ax3.grid(True, alpha=0.3, axis="y")
-        ax3.set_ylim(-0.2, 1.0)
-        
+        ax3.set_ylim(-0.2, 1.2)
+
         # Add value labels on bars
         for i, (mean_bar, max_bar, min_bar) in enumerate(zip(bars_mean, bars_max, bars_min)):
             # Mean value
@@ -482,8 +482,8 @@ def create_visualizations(results, cross_results=None, output_dir=None):
         ax6.set_xticklabels(cross_results["layers"], rotation=45)
         ax6.legend()
         ax6.grid(True, alpha=0.3, axis="y")
-        ax6.set_ylim(-0.2, 1.0)
-        
+        ax6.set_ylim(-0.2, 1.2)
+
         # Add value labels on bars
         for i, (mean_bar, max_bar, min_bar) in enumerate(zip(bars_mean_cross, bars_max_cross, bars_min_cross)):
             # Mean value
@@ -592,8 +592,8 @@ def create_visualizations(results, cross_results=None, output_dir=None):
         ax3.set_xticklabels(results["layers"], rotation=45)
         ax3.legend()
         ax3.grid(True, alpha=0.3, axis="y")
-        ax3.set_ylim(-0.2, 1.0)
-        
+        ax3.set_ylim(-0.2, 1.2)
+
         # Add value labels on bars
         for i, (mean_bar, max_bar, min_bar) in enumerate(zip(bars_mean, bars_max, bars_min)):
             # Mean value
