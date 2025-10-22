@@ -1,0 +1,198 @@
+Starting correlation and MSE analysis at Wed Oct 22 18:42:40 IDT 2025
+Running on node: rack-omerl-g01
+Job ID: 59014
+📦 Installing seaborn...
+📦 Installing scikit-learn...
+📦 Installing scipy...
+✅ Pandas 2.3.2 is available
+✅ NumPy 1.26.4 is available
+✅ Matplotlib 3.10.6 is available
+✅ Seaborn 0.13.2 is available
+✅ Scikit-learn 1.7.2 is available
+✅ SciPy 1.10.1 is available
+🔍 Checking data availability...
+✅ Data file found: /home/morg/students/idoavnir/Isaac-GR00T-fork/action_different_vlm_layers_data/batches_parquet/merged_batches.parquet
+-rw-r--r-- 1 idoavnir cs_morglab 176M Sep 25 22:52 /home/morg/students/idoavnir/Isaac-GR00T-fork/action_different_vlm_layers_data/batches_parquet/merged_batches.parquet
+🚀 Starting correlation and MSE analysis...
+🔄 Loading correct task parquet data...
+Loading data from: /home/morg/students/idoavnir/Isaac-GR00T-fork/action_different_vlm_layers_data/batches_parquet/merged_batches.parquet
+Loaded 60000 samples with 7 columns
+🔄 Loading wrong task parquet data...
+Loading data from: /home/morg/students/idoavnir/Isaac-GR00T-fork/action_wrong_task_different_vlm_layers_data/batches_parquet/merged_batches.parquet
+Loaded 60000 samples with 7 columns
+
+🔄 Extracting correct task layer data...
+Processing action_right_arm_layer_1...
+  Shape: (60000, 112)
+Processing action_right_arm_layer_3...
+  Shape: (60000, 112)
+Processing action_right_arm_layer_6...
+  Shape: (60000, 112)
+Processing action_right_arm_layer_9...
+  Shape: (60000, 112)
+Processing action_right_arm_layer_12...
+  Shape: (60000, 112)
+
+🔄 Extracting wrong task layer data...
+Processing action_right_arm_layer_1...
+  Shape: (60000, 112)
+Processing action_right_arm_layer_3...
+  Shape: (60000, 112)
+Processing action_right_arm_layer_6...
+  Shape: (60000, 112)
+Processing action_right_arm_layer_9...
+  Shape: (60000, 112)
+Processing action_right_arm_layer_12...
+  Shape: (60000, 112)
+
+🔄 Calculating within-dataset MSE and correlation metrics...
+
+Calculating metrics:
+==================================================
+Layer 1 vs Layer 12:
+  Average MSE: 0.273264
+  Mean per-dimension correlation: 0.048899
+  Max per-dimension correlation: 0.174380 (dimension 6)
+  Min per-dimension correlation: -0.093921 (dimension 3)
+  Number of dimensions: 7
+
+Layer 3 vs Layer 12:
+  Average MSE: 0.265664
+  Mean per-dimension correlation: 0.078024
+  Max per-dimension correlation: 0.138457 (dimension 2)
+  Min per-dimension correlation: 0.032278 (dimension 5)
+  Number of dimensions: 7
+
+Layer 6 vs Layer 12:
+  Average MSE: 0.249636
+  Mean per-dimension correlation: 0.256011
+  Max per-dimension correlation: 0.294212 (dimension 1)
+  Min per-dimension correlation: 0.165610 (dimension 5)
+  Number of dimensions: 7
+
+Layer 9 vs Layer 12:
+  Average MSE: 0.203771
+  Mean per-dimension correlation: 0.787231
+  Max per-dimension correlation: 0.849215 (dimension 3)
+  Min per-dimension correlation: 0.715208 (dimension 1)
+  Number of dimensions: 7
+
+
+🔄 Calculating cross-dataset MSE and correlation metrics...
+
+Calculating cross-dataset metrics (Wrong Task vs Correct Task Layer 12):
+======================================================================
+Wrong Task Layer 1 vs Correct Task Layer 12:
+  Average MSE: 0.273388
+  Mean per-dimension correlation: 0.031108
+  Max per-dimension correlation: 0.169619 (dimension 6)
+  Min per-dimension correlation: -0.093561 (dimension 3)
+  Number of dimensions: 7
+
+Wrong Task Layer 3 vs Correct Task Layer 12:
+  Average MSE: 0.265144
+  Mean per-dimension correlation: 0.087285
+  Max per-dimension correlation: 0.154108 (dimension 2)
+  Min per-dimension correlation: 0.004888 (dimension 5)
+  Number of dimensions: 7
+
+Wrong Task Layer 6 vs Correct Task Layer 12:
+  Average MSE: 0.256198
+  Mean per-dimension correlation: 0.236040
+  Max per-dimension correlation: 0.276286 (dimension 6)
+  Min per-dimension correlation: 0.150691 (dimension 5)
+  Number of dimensions: 7
+
+Wrong Task Layer 9 vs Correct Task Layer 12:
+  Average MSE: 0.211852
+  Mean per-dimension correlation: 0.764301
+  Max per-dimension correlation: 0.835121 (dimension 6)
+  Min per-dimension correlation: 0.666766 (dimension 1)
+  Number of dimensions: 7
+
+Wrong Task Layer 12 vs Correct Task Layer 12:
+  Average MSE: 0.002654
+  Mean per-dimension correlation: 0.994153
+  Max per-dimension correlation: 0.996182 (dimension 3)
+  Min per-dimension correlation: 0.991400 (dimension 5)
+  Number of dimensions: 7
+
+
+🔄 Creating visualizations...
+Plot saved to: /home/morg/students/idoavnir/Isaac-GR00T-fork/analysis/patching/layer_analysis_results.png
+
+📊 WITHIN-DATASET RESULTS (Correct Task Layers vs Correct Task Layer 12)
+==========================================================================================
+Layer        MSE             Mean Corr    Max Corr     Max Dim      Min Corr     Min Dim     
+------------------------------------------------------------------------------------------
+Layer 1      0.273264        0.048899     0.174380     6            -0.093921    3           
+Layer 3      0.265664        0.078024     0.138457     2            0.032278     5           
+Layer 6      0.249636        0.256011     0.294212     1            0.165610     5           
+Layer 9      0.203771        0.787231     0.849215     3            0.715208     1           
+
+📊 CROSS-DATASET RESULTS (Wrong Task Layers vs Correct Task Layer 12)
+==========================================================================================
+Layer        MSE             Mean Corr    Max Corr     Max Dim      Min Corr     Min Dim     
+------------------------------------------------------------------------------------------
+Wrong L1     0.273388        0.031108     0.169619     6            -0.093561    3           
+Wrong L3     0.265144        0.087285     0.154108     2            0.004888     5           
+Wrong L6     0.256198        0.236040     0.276286     6            0.150691     5           
+Wrong L9     0.211852        0.764301     0.835121     6            0.666766     1           
+Wrong L12    0.002654        0.994153     0.996182     3            0.991400     5           
+
+========================================================================================================================
+📊 DETAILED PER-DIMENSION CORRELATIONS - WITHIN-DATASET
+========================================================================================================================
+
+Layer 1:
+------------------------------------------------------------------------------------------------------------------------
+  Dim   0:  0.0670  Dim   1:  0.1181  Dim   2: -0.0062  Dim   3: -0.0939  Dim   4:  0.0469  Dim   5:  0.0360  Dim   6:  0.1744
+
+Layer 3:
+------------------------------------------------------------------------------------------------------------------------
+  Dim   0:  0.1181  Dim   1:  0.0748  Dim   2:  0.1385  Dim   3:  0.0668  Dim   4:  0.0821  Dim   5:  0.0323  Dim   6:  0.0336
+
+Layer 6:
+------------------------------------------------------------------------------------------------------------------------
+  Dim   0:  0.2772  Dim   1:  0.2942  Dim   2:  0.2807  Dim   3:  0.2516  Dim   4:  0.2331  Dim   5:  0.1656  Dim   6:  0.2896
+
+Layer 9:
+------------------------------------------------------------------------------------------------------------------------
+  Dim   0:  0.7932  Dim   1:  0.7152  Dim   2:  0.8016  Dim   3:  0.8492  Dim   4:  0.7952  Dim   5:  0.7201  Dim   6:  0.8361
+
+========================================================================================================================
+📊 DETAILED PER-DIMENSION CORRELATIONS - CROSS-DATASET
+========================================================================================================================
+
+Wrong L1:
+------------------------------------------------------------------------------------------------------------------------
+  Dim   0:  0.0973  Dim   1:  0.0594  Dim   2: -0.0454  Dim   3: -0.0936  Dim   4:  0.0286  Dim   5:  0.0019  Dim   6:  0.1696
+
+Wrong L3:
+------------------------------------------------------------------------------------------------------------------------
+  Dim   0:  0.1334  Dim   1:  0.0935  Dim   2:  0.1541  Dim   3:  0.1076  Dim   4:  0.0476  Dim   5:  0.0049  Dim   6:  0.0699
+
+Wrong L6:
+------------------------------------------------------------------------------------------------------------------------
+  Dim   0:  0.2719  Dim   1:  0.2430  Dim   2:  0.2753  Dim   3:  0.2425  Dim   4:  0.1926  Dim   5:  0.1507  Dim   6:  0.2763
+
+Wrong L9:
+------------------------------------------------------------------------------------------------------------------------
+  Dim   0:  0.7363  Dim   1:  0.6668  Dim   2:  0.7762  Dim   3:  0.8284  Dim   4:  0.7731  Dim   5:  0.7343  Dim   6:  0.8351
+
+Wrong L12:
+------------------------------------------------------------------------------------------------------------------------
+  Dim   0:  0.9953  Dim   1:  0.9928  Dim   2:  0.9940  Dim   3:  0.9962  Dim   4:  0.9941  Dim   5:  0.9914  Dim   6:  0.9952
+
+✅ Analysis completed successfully!
+
+💡 INTERPRETATION:
+- Analysis uses only the FIRST 7 DIMENSIONS of each action vector (first action)
+- All correlations are computed per-dimension (each action component independently)
+- Mean Correlation = average of per-dimension correlations across all 7 dimensions
+- Within-dataset results show how similar different layers are within the correct task
+- Cross-dataset results show how wrong task layers compare to the correct task layer 12
+- Lower correlations in cross-dataset results suggest task-specific representations
+- Higher MSE in cross-dataset results indicates greater differences between tasks
+- Max/Min correlations identify which specific action dimensions are most/least preserved
+✅ Correlation and MSE analysis job completed at Wed Oct 22 18:47:42 IDT 2025
