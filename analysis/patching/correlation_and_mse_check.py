@@ -368,7 +368,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 f"{mean_val:.3f}",
                 ha="center",
                 va="bottom" if mean_val >= 0 else "top",
-                fontsize=8,
+                fontsize=6,
                 fontweight="bold",
             )
             # Max value
@@ -379,7 +379,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 f"{max_val:.3f}",
                 ha="center",
                 va="bottom" if max_val >= 0 else "top",
-                fontsize=8,
+                fontsize=6,
                 fontweight="bold",
             )
             # Min value
@@ -390,7 +390,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 f"{min_val:.3f}",
                 ha="center",
                 va="bottom" if min_val >= 0 else "top",
-                fontsize=8,
+                fontsize=6,
                 fontweight="bold",
             )
 
@@ -494,7 +494,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 f"{mean_val:.3f}",
                 ha="center",
                 va="bottom" if mean_val >= 0 else "top",
-                fontsize=8,
+                fontsize=6,
                 fontweight="bold",
             )
             # Max value
@@ -505,7 +505,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 f"{max_val:.3f}",
                 ha="center",
                 va="bottom" if max_val >= 0 else "top",
-                fontsize=8,
+                fontsize=6,
                 fontweight="bold",
             )
             # Min value
@@ -516,7 +516,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 f"{min_val:.3f}",
                 ha="center",
                 va="bottom" if min_val >= 0 else "top",
-                fontsize=8,
+                fontsize=6,
                 fontweight="bold",
             )
 
@@ -604,7 +604,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 f"{mean_val:.3f}",
                 ha="center",
                 va="bottom" if mean_val >= 0 else "top",
-                fontsize=8,
+                fontsize=6,
                 fontweight="bold",
             )
             # Max value
@@ -615,7 +615,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 f"{max_val:.3f}",
                 ha="center",
                 va="bottom" if max_val >= 0 else "top",
-                fontsize=8,
+                fontsize=6,
                 fontweight="bold",
             )
             # Min value
@@ -626,7 +626,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 f"{min_val:.3f}",
                 ha="center",
                 va="bottom" if min_val >= 0 else "top",
-                fontsize=8,
+                fontsize=6,
                 fontweight="bold",
             )
 
