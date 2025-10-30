@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Runner script for evaluating trained probes on GR00T fused embeddings.
+Runner script for comparing all probes for action_different_vlm_layers data.
 """
 
 import os
@@ -9,36 +9,41 @@ import sys
 # Add parent directory to path to import evaluate_probe module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from probe.evaluate_probe import evaluate_single_probe
+from probe.evaluate_probe import compare_all_probes_for_action_step
 
 
 def run():
-    """Run probe evaluation."""
-    print("🏁 Starting probe evaluation...")
+    """Run probe comparison for action_different_vlm_layers data."""
+    print("🏁 Starting probe comparison for action_different_vlm_layers data...")
     print("=" * 60)
 
-    # Configure paths
-    data_path = (
-        "/home/morg/students/idoavnir/Isaac-GR00T-fork/separated_embeddings_data/batches_parquet/merged_batches.parquet"
-    )
+    # Get action step from command line argument if provided
+    action_step = int(sys.argv[1]) if len(sys.argv) > 1 else 0
 
-    # Check if data file exists
-    if not os.path.exists(data_path):
-        print(f"❌ Data file not found: {data_path}")
-        print("Please make sure the data extraction has been completed.")
-        sys.exit(1)
-
-    print(f"✅ Found data file: {data_path}")
-
-    # Run evaluation with specified parameters
-    evaluate_single_probe(
-        feature_col_name="vision_last_vector",  # Can be modified as needed
-        action_step=0,
-        data_path=data_path,
-    )
-
+    print(f"📊 Action step: {action_step}")
+    print(f"📁 Data source: action_different_vlm_layers_data")
     print("=" * 60)
-    print("🎉 Evaluation completed!")
+
+    # Run comparison with specified action step
+    results = compare_all_probes_for_action_step(
+        action_step=action_step,
+        show_plot=True,
+    )
+
+    if results:
+        print("\n" + "=" * 60)
+        print("📊 SUMMARY OF ALL PROBES")
+        print("=" * 60)
+        for probe_name, metrics in results.items():
+            print(f"\n{probe_name}:")
+            print(f"  MSE:              {metrics['mse']:.6f}")
+            print(f"  Mean Correlation: {metrics['mean_correlation']:.4f}")
+            print(f"  Max Correlation:  {metrics['max_correlation']:.4f}")
+            print(f"  Min Correlation:  {metrics['min_correlation']:.4f}")
+
+    print("\n" + "=" * 60)
+    print("🎉 Comparison completed!")
+    print("=" * 60)
 
 
 if __name__ == "__main__":

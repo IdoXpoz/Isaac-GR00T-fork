@@ -107,7 +107,7 @@ def compare_feature_types(action_step: int = 0, show_plot: bool = True) -> Dict[
     bars1 = ax1.bar(range(len(feature_names)), mse_values, color=colors, alpha=0.7, edgecolor="navy")
     ax1.set_xlabel("Feature Type", fontsize=12)
     ax1.set_ylabel("MSE", fontsize=12)
-    ax1.set_title(f"MSE comparison - Action Step {action_step}", fontsize=14, fontweight="bold")
+    ax1.set_title(f"MSE comparison", fontsize=14, fontweight="bold")
     ax1.set_xticks(range(len(feature_names)))
     ax1.set_xticklabels(feature_names, rotation=45, ha="right")
     ax1.grid(True, alpha=0.3)
@@ -158,7 +158,7 @@ def compare_feature_types(action_step: int = 0, show_plot: bool = True) -> Dict[
 
     ax2.set_xlabel("Feature Type", fontsize=12)
     ax2.set_ylabel("Correlation", fontsize=12)
-    ax2.set_title(f"Per dimension correlation stats - Action Step {action_step}", fontsize=14, fontweight="bold")
+    ax2.set_title(f"Per dimension correlation stats", fontsize=14, fontweight="bold")
     ax2.set_xticks(x)
     ax2.set_xticklabels(feature_names, rotation=45, ha="right")
     ax2.legend()
@@ -201,6 +201,11 @@ def compare_feature_types(action_step: int = 0, show_plot: bool = True) -> Dict[
             fontweight="bold",
         )
 
+    fig.suptitle(
+        "Probe analysis - visual tokens and textual embedding comparison",
+        fontsize=14,
+        fontweight="bold",
+    )
     plt.tight_layout()
 
     output_dir = os.path.join(output_base_dir, "comparisons")
