@@ -209,7 +209,7 @@ def print_evaluation_summary(metrics: Dict[str, float]):
     print(f"\n🔗 Correlation Analysis:")
     avg_corr = np.mean(metrics["correlations"])
     print(f"  Average Correlation: {avg_corr:.4f}")
-    print(f"  correlations per dimension: {metrics['correlations']}")
+    print(f"  correlations per engine: {metrics['correlations']}")
 
     print("\n" + "=" * 60)
 
@@ -572,7 +572,7 @@ def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = T
 
     ax2.set_xlabel("Probe Configuration", fontsize=12)
     ax2.set_ylabel("Correlation", fontsize=12)
-    ax2.set_title(f"Per dimension correlation stats - Action Step {action_step}", fontsize=14, fontweight="bold")
+    ax2.set_title(f"Per engine correlation stats", fontsize=14, fontweight="bold")
     ax2.set_xticks(x)
     ax2.set_xticklabels(probe_names, rotation=45, ha="right")
     ax2.legend()

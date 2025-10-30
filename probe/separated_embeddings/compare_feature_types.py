@@ -158,7 +158,7 @@ def compare_feature_types(action_step: int = 0, show_plot: bool = True) -> Dict[
 
     ax2.set_xlabel("Feature Type", fontsize=12)
     ax2.set_ylabel("Correlation", fontsize=12)
-    ax2.set_title(f"Per dimension correlation stats", fontsize=14, fontweight="bold")
+    ax2.set_title(f"Per engine correlation stats", fontsize=14, fontweight="bold")
     ax2.set_xticks(x)
     ax2.set_xticklabels(feature_names, rotation=45, ha="right")
     ax2.legend()
