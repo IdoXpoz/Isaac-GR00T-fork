@@ -436,11 +436,10 @@ def evaluate_all_probes_for_single_action_step(
 
 
 def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = True) -> Dict[str, Dict[str, float]]:
-    """Create a comparison graph of MSE and mean correlation for all probes for a single action step.
+    """Create a comparison graph of MSE and per-dimension correlation stats for all probes for a single action step.
 
     Args:
         action_step: Which action step to compare (0-based)
-        output_dir: Directory to save the comparison plot. If None, uses default location.
         show_plot: Whether to display the plot
 
     Returns:
@@ -456,7 +455,9 @@ def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = T
     # Storage for metrics
     probe_names = []
     mse_values = []
-    correlation_values = []
+    mean_correlations = []
+    max_correlations = []
+    min_correlations = []
     missing_probes = []
 
     # Load metrics for each probe
@@ -476,13 +477,21 @@ def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = T
                     probe_names.append(feature_col_name)
                     mse_values.append(metrics["mse"])
 
-                    # Calculate mean correlation
+                    # Get per-dimension correlations
                     correlations = metrics["correlations"]
                     if isinstance(correlations, list):
-                        mean_corr = np.mean([c for c in correlations if not np.isnan(c)])
+                        valid_corrs = [c for c in correlations if not np.isnan(c)]
+                        mean_corr = np.mean(valid_corrs) if valid_corrs else 0.0
+                        max_corr = np.max(valid_corrs) if valid_corrs else 0.0
+                        min_corr = np.min(valid_corrs) if valid_corrs else 0.0
                     else:
                         mean_corr = correlations if not np.isnan(correlations) else 0.0
-                    correlation_values.append(mean_corr)
+                        max_corr = mean_corr
+                        min_corr = mean_corr
+
+                    mean_correlations.append(mean_corr)
+                    max_correlations.append(max_corr)
+                    min_correlations.append(min_corr)
 
                     print(f"✅ Loaded {feature_col_name}: MSE={metrics['mse']:.6f}, Mean Corr={mean_corr:.4f}")
 
@@ -498,7 +507,7 @@ def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = T
         return {}
 
     # Create comparison plot
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6))
 
     # Colors for different pooling methods
     colors = []
@@ -509,10 +518,10 @@ def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = T
             colors.append("darkorange")
 
     # MSE comparison
-    bars1 = ax1.bar(range(len(probe_names)), mse_values, color=colors, alpha=0.7)
-    ax1.set_xlabel("Probe Configuration")
-    ax1.set_ylabel("MSE (Lower is Better)")
-    ax1.set_title(f"MSE Comparison - Action Step {action_step}")
+    bars1 = ax1.bar(range(len(probe_names)), mse_values, color=colors, alpha=0.7, edgecolor="navy")
+    ax1.set_xlabel("Probe Configuration", fontsize=12)
+    ax1.set_ylabel("MSE", fontsize=12)
+    ax1.set_title(f"MSE comparison - Action Step {action_step}", fontsize=14, fontweight="bold")
     ax1.set_xticks(range(len(probe_names)))
     ax1.set_xticklabels(probe_names, rotation=45, ha="right")
     ax1.grid(True, alpha=0.3)
@@ -526,39 +535,87 @@ def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = T
             ha="center",
             va="bottom",
             fontsize=8,
+            fontweight="bold",
         )
 
-    # Correlation comparison
-    bars2 = ax2.bar(range(len(probe_names)), correlation_values, color=colors, alpha=0.7)
-    ax2.set_xlabel("Probe Configuration")
-    ax2.set_ylabel("Mean Correlation (Higher is Better)")
-    ax2.set_title(f"Mean Correlation Comparison - Action Step {action_step}")
-    ax2.set_xticks(range(len(probe_names)))
+    # Per-dimension correlation stats
+    x = np.arange(len(probe_names))
+    width = 0.25
+
+    bars_mean = ax2.bar(
+        x - width,
+        mean_correlations,
+        width,
+        label="Mean",
+        color="gold",
+        alpha=0.7,
+        edgecolor="darkorange",
+    )
+    bars_max = ax2.bar(
+        x,
+        max_correlations,
+        width,
+        label="Max",
+        color="lightgreen",
+        alpha=0.7,
+        edgecolor="darkgreen",
+    )
+    bars_min = ax2.bar(
+        x + width,
+        min_correlations,
+        width,
+        label="Min",
+        color="salmon",
+        alpha=0.7,
+        edgecolor="darkred",
+    )
+
+    ax2.set_xlabel("Probe Configuration", fontsize=12)
+    ax2.set_ylabel("Correlation", fontsize=12)
+    ax2.set_title(f"Per dimension correlation stats - Action Step {action_step}", fontsize=14, fontweight="bold")
+    ax2.set_xticks(x)
     ax2.set_xticklabels(probe_names, rotation=45, ha="right")
-    ax2.grid(True, alpha=0.3)
+    ax2.legend()
+    ax2.grid(True, alpha=0.3, axis="y")
+    ax2.set_ylim(-0.2, 1.2)
 
     # Add value labels on bars
-    for i, (bar, value) in enumerate(zip(bars2, correlation_values)):
+    for i in range(len(probe_names)):
+        # Mean value
+        mean_val = mean_correlations[i]
         ax2.text(
-            bar.get_x() + bar.get_width() / 2,
-            bar.get_height() + max(correlation_values) * 0.01,
-            f"{value:.3f}",
+            bars_mean[i].get_x() + bars_mean[i].get_width() / 2,
+            mean_val + 0.02 if mean_val >= 0 else mean_val - 0.05,
+            f"{mean_val:.3f}",
             ha="center",
-            va="bottom",
-            fontsize=8,
+            va="bottom" if mean_val >= 0 else "top",
+            fontsize=7,
+            fontweight="bold",
+        )
+        # Max value
+        max_val = max_correlations[i]
+        ax2.text(
+            bars_max[i].get_x() + bars_max[i].get_width() / 2,
+            max_val + 0.02 if max_val >= 0 else max_val - 0.05,
+            f"{max_val:.3f}",
+            ha="center",
+            va="bottom" if max_val >= 0 else "top",
+            fontsize=7,
+            fontweight="bold",
+        )
+        # Min value
+        min_val = min_correlations[i]
+        ax2.text(
+            bars_min[i].get_x() + bars_min[i].get_width() / 2,
+            min_val + 0.02 if min_val >= 0 else min_val - 0.05,
+            f"{min_val:.3f}",
+            ha="center",
+            va="bottom" if min_val >= 0 else "top",
+            fontsize=7,
+            fontweight="bold",
         )
 
-    # Add legend
-    from matplotlib.patches import Patch
-
-    legend_elements = [
-        Patch(facecolor="steelblue", alpha=0.7, label="Mean Pooled"),
-        Patch(facecolor="darkorange", alpha=0.7, label="Last Vector"),
-    ]
-    fig.legend(handles=legend_elements, loc="upper center", bbox_to_anchor=(0.5, 0.95), ncol=2)
-
     plt.tight_layout()
-    plt.subplots_adjust(top=0.85)
 
     output_dir = os.path.join(output_base_dir, "comparisons")
     os.makedirs(output_dir, exist_ok=True)
@@ -577,10 +634,10 @@ def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = T
         best_mse_idx = np.argmin(mse_values)
         print(f"  🏆 Lowest MSE: {probe_names[best_mse_idx]} ({mse_values[best_mse_idx]:.6f})")
 
-    # Find best correlation (highest)
-    if correlation_values:
-        best_corr_idx = np.argmax(correlation_values)
-        print(f"  🏆 Highest Correlation: {probe_names[best_corr_idx]} ({correlation_values[best_corr_idx]:.4f})")
+    # Find best mean correlation (highest)
+    if mean_correlations:
+        best_corr_idx = np.argmax(mean_correlations)
+        print(f"  🏆 Highest Mean Correlation: {probe_names[best_corr_idx]} ({mean_correlations[best_corr_idx]:.4f})")
 
     if missing_probes:
         print(f"\n⚠️  Missing evaluations for: {', '.join(missing_probes)}")
@@ -590,7 +647,12 @@ def compare_all_probes_for_action_step(action_step: int = 0, show_plot: bool = T
     # Return organized results
     results = {}
     for i, name in enumerate(probe_names):
-        results[name] = {"mse": mse_values[i], "mean_correlation": correlation_values[i]}
+        results[name] = {
+            "mse": mse_values[i],
+            "mean_correlation": mean_correlations[i],
+            "max_correlation": max_correlations[i],
+            "min_correlation": min_correlations[i],
+        }
 
     return results
 
