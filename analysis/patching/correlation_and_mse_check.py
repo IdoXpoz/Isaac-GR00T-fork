@@ -326,7 +326,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
             x + width, results["min_correlations"], width, label="Min", color="salmon", alpha=0.7, edgecolor="darkred"
         )
 
-        ax2.set_title("Per dimension correlation stats - correct task", fontsize=14, fontweight="bold")
+        ax2.set_title("Per engine correlation stats - correct task", fontsize=14, fontweight="bold")
         ax2.set_xlabel("Layer", fontsize=12)
         ax2.set_ylabel("Correlation", fontsize=12)
         ax2.set_xticks(x)
@@ -426,7 +426,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
             edgecolor="darkred",
         )
 
-        ax4.set_title("Per dimension correlation stats - wrong task", fontsize=14, fontweight="bold")
+        ax4.set_title("Per engine correlation stats - wrong task", fontsize=14, fontweight="bold")
         ax4.set_xlabel("Wrong Task Layer", fontsize=12)
         ax4.set_ylabel("Correlation", fontsize=12)
         ax4.set_xticks(x_cross)
@@ -527,7 +527,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
             x + width, results["min_correlations"], width, label="Min", color="salmon", alpha=0.7, edgecolor="darkred"
         )
 
-        ax2.set_title("Per dimension correlation stats", fontsize=14, fontweight="bold")
+        ax2.set_title("Per engine correlation stats", fontsize=14, fontweight="bold")
         ax2.set_xlabel("Layer", fontsize=12)
         ax2.set_ylabel("Correlation", fontsize=12)
         ax2.set_xticks(x)
