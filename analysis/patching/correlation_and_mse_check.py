@@ -282,12 +282,14 @@ def create_visualizations(results, cross_results=None, output_dir=None):
     sns.set_palette("husl")
 
     if cross_results is not None:
-        # ============ FIGURE 1: WITHIN-DATASET ============
-        fig1, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        # Create 2x2 subplot layout: Row 1 = Correct Task, Row 2 = Wrong Task
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(18, 12))
 
-        # Within-dataset MSE Plot
+        # ============ ROW 1: CORRECT TASK ============
+
+        # Correct task MSE Plot (top left)
         bars1 = ax1.bar(results["layers"], results["mse_values"], color="skyblue", alpha=0.7, edgecolor="navy")
-        ax1.set_title("MSE comparison", fontsize=14, fontweight="bold")
+        ax1.set_title("MSE - correct task", fontsize=14, fontweight="bold")
         ax1.set_xlabel("Layer", fontsize=12)
         ax1.set_ylabel("MSE", fontsize=12)
         ax1.tick_params(axis="x", rotation=45)
@@ -305,7 +307,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 fontsize=10,
             )
 
-        # Within-dataset Per-Dimension Correlation Stats
+        # Correct task Per-Dimension Correlation Stats (top right)
         x = np.arange(len(results["layers"]))
         width = 0.25
         bars_mean = ax2.bar(
@@ -324,7 +326,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
             x + width, results["min_correlations"], width, label="Min", color="salmon", alpha=0.7, edgecolor="darkred"
         )
 
-        ax2.set_title("Per dimension correlation stats", fontsize=14, fontweight="bold")
+        ax2.set_title("Per dimension correlation stats - correct task", fontsize=14, fontweight="bold")
         ax2.set_xlabel("Layer", fontsize=12)
         ax2.set_ylabel("Correlation", fontsize=12)
         ax2.set_xticks(x)
@@ -369,26 +371,13 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 fontweight="bold",
             )
 
-        fig1.suptitle(
-            "Patching analysis - comparing normal inference to actions when patching different hidden layers from the VLM to the diffusion model",
-            fontsize=14,
-            fontweight="bold",
-        )
-        fig1.tight_layout()
+        # ============ ROW 2: WRONG TASK ============
 
-        if output_dir:
-            output_path = os.path.join(output_dir, "within_dataset_analysis.png")
-            fig1.savefig(output_path, dpi=300, bbox_inches="tight")
-            print(f"Within-dataset plot saved to: {output_path}")
-
-        # ============ FIGURE 2: CROSS-DATASET ============
-        fig2, (ax3, ax4) = plt.subplots(1, 2, figsize=(16, 6))
-
-        # Cross-dataset MSE Plot
+        # Wrong task MSE Plot (bottom left)
         bars3 = ax3.bar(
             cross_results["layers"], cross_results["mse_values"], color="lightblue", alpha=0.7, edgecolor="darkblue"
         )
-        ax3.set_title("MSE comparison", fontsize=14, fontweight="bold")
+        ax3.set_title("MSE - wrong task", fontsize=14, fontweight="bold")
         ax3.set_xlabel("Wrong Task Layer", fontsize=12)
         ax3.set_ylabel("MSE", fontsize=12)
         ax3.tick_params(axis="x", rotation=45)
@@ -407,7 +396,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                     fontsize=10,
                 )
 
-        # Cross-dataset Per-Dimension Correlation Stats
+        # Wrong task Per-Dimension Correlation Stats (bottom right)
         x_cross = np.arange(len(cross_results["layers"]))
         bars_mean_cross = ax4.bar(
             x_cross - width,
@@ -437,7 +426,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
             edgecolor="darkred",
         )
 
-        ax4.set_title("Per dimension correlation stats", fontsize=14, fontweight="bold")
+        ax4.set_title("Per dimension correlation stats - wrong task", fontsize=14, fontweight="bold")
         ax4.set_xlabel("Wrong Task Layer", fontsize=12)
         ax4.set_ylabel("Correlation", fontsize=12)
         ax4.set_xticks(x_cross)
@@ -482,17 +471,17 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 fontweight="bold",
             )
 
-        fig2.suptitle(
-            "Patching analysis - wrong task. Comparing normal inference of correct task to actions when patching different hidden layers running on wrong task",
+        fig.suptitle(
+            "Patching analysis - comparing normal inference to actions when patching different hidden layers from the VLM to the diffusion model (correct and wrong tasks)",
             fontsize=14,
             fontweight="bold",
         )
-        fig2.tight_layout()
+        fig.tight_layout()
 
         if output_dir:
-            output_path = os.path.join(output_dir, "cross_dataset_analysis.png")
-            fig2.savefig(output_path, dpi=300, bbox_inches="tight")
-            print(f"Cross-dataset plot saved to: {output_path}")
+            output_path = os.path.join(output_dir, "layer_analysis_results.png")
+            fig.savefig(output_path, dpi=300, bbox_inches="tight")
+            print(f"Plot saved to: {output_path}")
 
         plt.show()
     else:
