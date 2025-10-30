@@ -282,14 +282,12 @@ def create_visualizations(results, cross_results=None, output_dir=None):
     sns.set_palette("husl")
 
     if cross_results is not None:
-        # Create 2x3 subplot layout: Row 1 = Within-Dataset, Row 2 = Cross-Dataset
-        fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(22, 12))
+        # ============ FIGURE 1: WITHIN-DATASET ============
+        fig1, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
 
-        # ============ ROW 1: WITHIN-DATASET ============
-
-        # Within-dataset MSE Plot (top left)
+        # Within-dataset MSE Plot
         bars1 = ax1.bar(results["layers"], results["mse_values"], color="skyblue", alpha=0.7, edgecolor="navy")
-        ax1.set_title("Within-Dataset: MSE vs Correct Layer 12", fontsize=14, fontweight="bold")
+        ax1.set_title("MSE comparison", fontsize=14, fontweight="bold")
         ax1.set_xlabel("Layer", fontsize=12)
         ax1.set_ylabel("MSE", fontsize=12)
         ax1.tick_params(axis="x", rotation=45)
@@ -307,33 +305,10 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 fontsize=10,
             )
 
-        # Within-dataset Mean Per-Dimension Correlation Plot (top middle)
-        bars2 = ax2.bar(
-            results["layers"], results["correlation_values"], color="lightcoral", alpha=0.7, edgecolor="darkred"
-        )
-        ax2.set_title("Within-Dataset: Mean Per-Dimension Correlation", fontsize=14, fontweight="bold")
-        ax2.set_xlabel("Layer", fontsize=12)
-        ax2.set_ylabel("Mean Correlation", fontsize=12)
-        ax2.tick_params(axis="x", rotation=45)
-        ax2.grid(True, alpha=0.3)
-        # Don't force 0-1 range, let it auto-adjust to show variation
-
-        # Add value labels on bars
-        for bar, value in zip(bars2, results["correlation_values"]):
-            ax2.text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + 0.02,
-                f"{value:.4f}",
-                ha="center",
-                va="bottom",
-                fontweight="bold",
-                fontsize=10,
-            )
-
-        # Within-dataset Per-Dimension Correlation Stats (top right)
+        # Within-dataset Per-Dimension Correlation Stats
         x = np.arange(len(results["layers"]))
         width = 0.25
-        bars_mean = ax3.bar(
+        bars_mean = ax2.bar(
             x - width,
             results["mean_correlations"],
             width,
@@ -342,74 +317,87 @@ def create_visualizations(results, cross_results=None, output_dir=None):
             alpha=0.7,
             edgecolor="darkorange",
         )
-        bars_max = ax3.bar(
+        bars_max = ax2.bar(
             x, results["max_correlations"], width, label="Max", color="lightgreen", alpha=0.7, edgecolor="darkgreen"
         )
-        bars_min = ax3.bar(
+        bars_min = ax2.bar(
             x + width, results["min_correlations"], width, label="Min", color="salmon", alpha=0.7, edgecolor="darkred"
         )
 
-        ax3.set_title("Within-Dataset: Per-Dimension Correlation Stats", fontsize=14, fontweight="bold")
-        ax3.set_xlabel("Layer", fontsize=12)
-        ax3.set_ylabel("Correlation", fontsize=12)
-        ax3.set_xticks(x)
-        ax3.set_xticklabels(results["layers"], rotation=45)
-        ax3.legend()
-        ax3.grid(True, alpha=0.3, axis="y")
-        ax3.set_ylim(-0.2, 1.2)
+        ax2.set_title("Per dimension correlation stats", fontsize=14, fontweight="bold")
+        ax2.set_xlabel("Layer", fontsize=12)
+        ax2.set_ylabel("Correlation", fontsize=12)
+        ax2.set_xticks(x)
+        ax2.set_xticklabels(results["layers"], rotation=45)
+        ax2.legend()
+        ax2.grid(True, alpha=0.3, axis="y")
+        ax2.set_ylim(-0.2, 1.2)
 
         # Add value labels on bars
         for i, (mean_bar, max_bar, min_bar) in enumerate(zip(bars_mean, bars_max, bars_min)):
             # Mean value
             mean_val = results["mean_correlations"][i]
-            ax3.text(
+            ax2.text(
                 mean_bar.get_x() + mean_bar.get_width() / 2,
                 mean_val + 0.02 if mean_val >= 0 else mean_val - 0.05,
                 f"{mean_val:.3f}",
                 ha="center",
                 va="bottom" if mean_val >= 0 else "top",
-                fontsize=6,
+                fontsize=8,
                 fontweight="bold",
             )
             # Max value
             max_val = results["max_correlations"][i]
-            ax3.text(
+            ax2.text(
                 max_bar.get_x() + max_bar.get_width() / 2,
                 max_val + 0.02 if max_val >= 0 else max_val - 0.05,
                 f"{max_val:.3f}",
                 ha="center",
                 va="bottom" if max_val >= 0 else "top",
-                fontsize=6,
+                fontsize=8,
                 fontweight="bold",
             )
             # Min value
             min_val = results["min_correlations"][i]
-            ax3.text(
+            ax2.text(
                 min_bar.get_x() + min_bar.get_width() / 2,
                 min_val + 0.02 if min_val >= 0 else min_val - 0.05,
                 f"{min_val:.3f}",
                 ha="center",
                 va="bottom" if min_val >= 0 else "top",
-                fontsize=6,
+                fontsize=8,
                 fontweight="bold",
             )
 
-        # ============ ROW 2: CROSS-DATASET ============
+        fig1.suptitle(
+            "Patching analysis - comparing normal inference to actions when patching different hidden layers from the VLM to the diffusion model",
+            fontsize=14,
+            fontweight="bold",
+        )
+        fig1.tight_layout()
 
-        # Cross-dataset MSE Plot (bottom left)
-        bars4 = ax4.bar(
+        if output_dir:
+            output_path = os.path.join(output_dir, "within_dataset_analysis.png")
+            fig1.savefig(output_path, dpi=300, bbox_inches="tight")
+            print(f"Within-dataset plot saved to: {output_path}")
+
+        # ============ FIGURE 2: CROSS-DATASET ============
+        fig2, (ax3, ax4) = plt.subplots(1, 2, figsize=(16, 6))
+
+        # Cross-dataset MSE Plot
+        bars3 = ax3.bar(
             cross_results["layers"], cross_results["mse_values"], color="lightblue", alpha=0.7, edgecolor="darkblue"
         )
-        ax4.set_title("Cross-Dataset: MSE (Wrong Task vs Correct Layer 12)", fontsize=14, fontweight="bold")
-        ax4.set_xlabel("Wrong Task Layer", fontsize=12)
-        ax4.set_ylabel("MSE", fontsize=12)
-        ax4.tick_params(axis="x", rotation=45)
-        ax4.grid(True, alpha=0.3)
+        ax3.set_title("MSE comparison", fontsize=14, fontweight="bold")
+        ax3.set_xlabel("Wrong Task Layer", fontsize=12)
+        ax3.set_ylabel("MSE", fontsize=12)
+        ax3.tick_params(axis="x", rotation=45)
+        ax3.grid(True, alpha=0.3)
 
         # Add value labels on bars
-        for bar, value in zip(bars4, cross_results["mse_values"]):
+        for bar, value in zip(bars3, cross_results["mse_values"]):
             if not np.isinf(value):  # Don't display inf values
-                ax4.text(
+                ax3.text(
                     bar.get_x() + bar.get_width() / 2,
                     bar.get_height() + max([v for v in cross_results["mse_values"] if not np.isinf(v)]) * 0.01,
                     f"{value:.4f}",
@@ -419,35 +407,9 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                     fontsize=10,
                 )
 
-        # Cross-dataset Mean Per-Dimension Correlation Plot (bottom middle)
-        bars5 = ax5.bar(
-            cross_results["layers"],
-            cross_results["correlation_values"],
-            color="orange",
-            alpha=0.7,
-            edgecolor="darkorange",
-        )
-        ax5.set_title("Cross-Dataset: Mean Per-Dimension Correlation", fontsize=14, fontweight="bold")
-        ax5.set_xlabel("Wrong Task Layer", fontsize=12)
-        ax5.set_ylabel("Mean Correlation", fontsize=12)
-        ax5.tick_params(axis="x", rotation=45)
-        ax5.grid(True, alpha=0.3)
-
-        # Add value labels on bars
-        for bar, value in zip(bars5, cross_results["correlation_values"]):
-            ax5.text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + 0.02 if value >= 0 else bar.get_height() - 0.05,
-                f"{value:.4f}",
-                ha="center",
-                va="bottom" if value >= 0 else "top",
-                fontweight="bold",
-                fontsize=10,
-            )
-
-        # Cross-dataset Per-Dimension Correlation Stats (bottom right)
+        # Cross-dataset Per-Dimension Correlation Stats
         x_cross = np.arange(len(cross_results["layers"]))
-        bars_mean_cross = ax6.bar(
+        bars_mean_cross = ax4.bar(
             x_cross - width,
             cross_results["mean_correlations"],
             width,
@@ -456,7 +418,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
             alpha=0.7,
             edgecolor="darkorange",
         )
-        bars_max_cross = ax6.bar(
+        bars_max_cross = ax4.bar(
             x_cross,
             cross_results["max_correlations"],
             width,
@@ -465,7 +427,7 @@ def create_visualizations(results, cross_results=None, output_dir=None):
             alpha=0.7,
             edgecolor="darkgreen",
         )
-        bars_min_cross = ax6.bar(
+        bars_min_cross = ax4.bar(
             x_cross + width,
             cross_results["min_correlations"],
             width,
@@ -475,59 +437,71 @@ def create_visualizations(results, cross_results=None, output_dir=None):
             edgecolor="darkred",
         )
 
-        ax6.set_title("Cross-Dataset: Per-Dimension Correlation Stats", fontsize=14, fontweight="bold")
-        ax6.set_xlabel("Wrong Task Layer", fontsize=12)
-        ax6.set_ylabel("Correlation", fontsize=12)
-        ax6.set_xticks(x_cross)
-        ax6.set_xticklabels(cross_results["layers"], rotation=45)
-        ax6.legend()
-        ax6.grid(True, alpha=0.3, axis="y")
-        ax6.set_ylim(-0.2, 1.2)
+        ax4.set_title("Per dimension correlation stats", fontsize=14, fontweight="bold")
+        ax4.set_xlabel("Wrong Task Layer", fontsize=12)
+        ax4.set_ylabel("Correlation", fontsize=12)
+        ax4.set_xticks(x_cross)
+        ax4.set_xticklabels(cross_results["layers"], rotation=45)
+        ax4.legend()
+        ax4.grid(True, alpha=0.3, axis="y")
+        ax4.set_ylim(-0.2, 1.2)
 
         # Add value labels on bars
         for i, (mean_bar, max_bar, min_bar) in enumerate(zip(bars_mean_cross, bars_max_cross, bars_min_cross)):
             # Mean value
             mean_val = cross_results["mean_correlations"][i]
-            ax6.text(
+            ax4.text(
                 mean_bar.get_x() + mean_bar.get_width() / 2,
                 mean_val + 0.02 if mean_val >= 0 else mean_val - 0.05,
                 f"{mean_val:.3f}",
                 ha="center",
                 va="bottom" if mean_val >= 0 else "top",
-                fontsize=6,
+                fontsize=8,
                 fontweight="bold",
             )
             # Max value
             max_val = cross_results["max_correlations"][i]
-            ax6.text(
+            ax4.text(
                 max_bar.get_x() + max_bar.get_width() / 2,
                 max_val + 0.02 if max_val >= 0 else max_val - 0.05,
                 f"{max_val:.3f}",
                 ha="center",
                 va="bottom" if max_val >= 0 else "top",
-                fontsize=6,
+                fontsize=8,
                 fontweight="bold",
             )
             # Min value
             min_val = cross_results["min_correlations"][i]
-            ax6.text(
+            ax4.text(
                 min_bar.get_x() + min_bar.get_width() / 2,
                 min_val + 0.02 if min_val >= 0 else min_val - 0.05,
                 f"{min_val:.3f}",
                 ha="center",
                 va="bottom" if min_val >= 0 else "top",
-                fontsize=6,
+                fontsize=8,
                 fontweight="bold",
             )
 
-        plt.suptitle("VLM Layer Analysis: Within-Dataset vs Cross-Dataset Comparisons", fontsize=16, fontweight="bold")
+        fig2.suptitle(
+            "Patching analysis - wrong task. Comparing normal inference of correct task to actions when patching different hidden layers running on wrong task",
+            fontsize=14,
+            fontweight="bold",
+        )
+        fig2.tight_layout()
+
+        if output_dir:
+            output_path = os.path.join(output_dir, "cross_dataset_analysis.png")
+            fig2.savefig(output_path, dpi=300, bbox_inches="tight")
+            print(f"Cross-dataset plot saved to: {output_path}")
+
+        plt.show()
     else:
-        # 1x3 layout for within-dataset only (added per-sample correlation stats)
-        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 6))
+        # 1x2 layout for within-dataset only
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
 
         # MSE Plot
         bars1 = ax1.bar(results["layers"], results["mse_values"], color="skyblue", alpha=0.7, edgecolor="navy")
-        ax1.set_title("Mean Squared Error vs Layer 12", fontsize=14, fontweight="bold")
+        ax1.set_title("MSE comparison", fontsize=14, fontweight="bold")
         ax1.set_xlabel("Layer", fontsize=12)
         ax1.set_ylabel("MSE", fontsize=12)
         ax1.tick_params(axis="x", rotation=45)
@@ -542,34 +516,13 @@ def create_visualizations(results, cross_results=None, output_dir=None):
                 ha="center",
                 va="bottom",
                 fontweight="bold",
-            )
-
-        # Mean Per-Dimension Correlation Plot
-        bars2 = ax2.bar(
-            results["layers"], results["correlation_values"], color="lightcoral", alpha=0.7, edgecolor="darkred"
-        )
-        ax2.set_title("Mean Per-Dimension Correlation", fontsize=14, fontweight="bold")
-        ax2.set_xlabel("Layer", fontsize=12)
-        ax2.set_ylabel("Mean Correlation", fontsize=12)
-        ax2.tick_params(axis="x", rotation=45)
-        ax2.grid(True, alpha=0.3)
-        # Don't force 0-1 range, let it auto-adjust to show variation
-
-        # Add value labels on bars
-        for bar, value in zip(bars2, results["correlation_values"]):
-            ax2.text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + 0.02,
-                f"{value:.4f}",
-                ha="center",
-                va="bottom",
-                fontweight="bold",
+                fontsize=10,
             )
 
         # Per-Dimension Correlation Stats
         x = np.arange(len(results["layers"]))
         width = 0.25
-        bars_mean = ax3.bar(
+        bars_mean = ax2.bar(
             x - width,
             results["mean_correlations"],
             width,
@@ -578,66 +531,71 @@ def create_visualizations(results, cross_results=None, output_dir=None):
             alpha=0.7,
             edgecolor="darkorange",
         )
-        bars_max = ax3.bar(
+        bars_max = ax2.bar(
             x, results["max_correlations"], width, label="Max", color="lightgreen", alpha=0.7, edgecolor="darkgreen"
         )
-        bars_min = ax3.bar(
+        bars_min = ax2.bar(
             x + width, results["min_correlations"], width, label="Min", color="salmon", alpha=0.7, edgecolor="darkred"
         )
 
-        ax3.set_title("Per-Dimension Correlation Stats", fontsize=14, fontweight="bold")
-        ax3.set_xlabel("Layer", fontsize=12)
-        ax3.set_ylabel("Correlation", fontsize=12)
-        ax3.set_xticks(x)
-        ax3.set_xticklabels(results["layers"], rotation=45)
-        ax3.legend()
-        ax3.grid(True, alpha=0.3, axis="y")
-        ax3.set_ylim(-0.2, 1.2)
+        ax2.set_title("Per dimension correlation stats", fontsize=14, fontweight="bold")
+        ax2.set_xlabel("Layer", fontsize=12)
+        ax2.set_ylabel("Correlation", fontsize=12)
+        ax2.set_xticks(x)
+        ax2.set_xticklabels(results["layers"], rotation=45)
+        ax2.legend()
+        ax2.grid(True, alpha=0.3, axis="y")
+        ax2.set_ylim(-0.2, 1.2)
 
         # Add value labels on bars
         for i, (mean_bar, max_bar, min_bar) in enumerate(zip(bars_mean, bars_max, bars_min)):
             # Mean value
             mean_val = results["mean_correlations"][i]
-            ax3.text(
+            ax2.text(
                 mean_bar.get_x() + mean_bar.get_width() / 2,
                 mean_val + 0.02 if mean_val >= 0 else mean_val - 0.05,
                 f"{mean_val:.3f}",
                 ha="center",
                 va="bottom" if mean_val >= 0 else "top",
-                fontsize=6,
+                fontsize=8,
                 fontweight="bold",
             )
             # Max value
             max_val = results["max_correlations"][i]
-            ax3.text(
+            ax2.text(
                 max_bar.get_x() + max_bar.get_width() / 2,
                 max_val + 0.02 if max_val >= 0 else max_val - 0.05,
                 f"{max_val:.3f}",
                 ha="center",
                 va="bottom" if max_val >= 0 else "top",
-                fontsize=6,
+                fontsize=8,
                 fontweight="bold",
             )
             # Min value
             min_val = results["min_correlations"][i]
-            ax3.text(
+            ax2.text(
                 min_bar.get_x() + min_bar.get_width() / 2,
                 min_val + 0.02 if min_val >= 0 else min_val - 0.05,
                 f"{min_val:.3f}",
                 ha="center",
                 va="bottom" if min_val >= 0 else "top",
-                fontsize=6,
+                fontsize=8,
                 fontweight="bold",
             )
 
-    plt.tight_layout()
+        fig.suptitle(
+            "Patching analysis - comparing normal inference to actions when patching different hidden layers from the VLM to the diffusion model",
+            fontsize=14,
+            fontweight="bold",
+        )
+        fig.tight_layout()
 
-    if output_dir:
-        output_path = os.path.join(output_dir, "layer_analysis_results.png")
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        print(f"Plot saved to: {output_path}")
+        if output_dir:
+            output_path = os.path.join(output_dir, "within_dataset_analysis.png")
+            fig.savefig(output_path, dpi=300, bbox_inches="tight")
+            print(f"Plot saved to: {output_path}")
 
-    plt.show()
+        plt.show()
 
 
 def main():
